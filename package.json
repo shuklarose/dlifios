@@ -6,7 +6,8 @@
   "scripts": {
     "probe": "tsx src/probe.ts",
     "chunk": "tsx src/chunk.ts",
-    "embed": "tsx src/embed.ts"
+    "embed": "tsx src/embed.ts",
+    "store": "tsx src/store.ts"
   },
   "keywords": [],
   "author": "",
