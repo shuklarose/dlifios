@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "probe": "tsx src/probe.ts",
-    "chunk": "tsx src/chunk.ts"
+    "chunk": "tsx src/chunk.ts",
+    "embed": "tsx src/embed.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +18,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "fast-xml-parser": "^5.8.0"
   }
-  
 }
