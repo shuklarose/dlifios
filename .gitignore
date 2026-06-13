@@ -1,0 +1,18 @@
+# Dependencies — reinstalled from package.json, never committed
+node_modules/
+
+# Secrets — real keys live here, must never reach GitHub
+.env
+
+# Cached / downloaded data — re-fetched at runtime
+data/
+
+# Hugging Face model cache (Day 5 — ~90 MB, downloaded on demand)
+.cache/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
