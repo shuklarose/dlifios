@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
+    "@langchain/core": "^1.1.49",
+    "@langchain/qdrant": "^1.0.3",
     "fast-xml-parser": "^5.8.0"
   }
 }

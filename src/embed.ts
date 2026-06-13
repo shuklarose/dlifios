@@ -3,6 +3,7 @@
 // is the whole trick of RAG: nearness = relevance.
 
 import { pipeline } from "@huggingface/transformers";
+import { fileURLToPath } from "node:url";
 
 const MODEL = "Xenova/all-MiniLM-L6-v2";
 
@@ -34,21 +35,29 @@ export async function embedMany(texts: string[]): Promise<number[][]> {
 
 // ---------- Demo: prove the meaning-space works (npm run embed) ----------
 
-const sentences = [
-  "The data subject must give consent to the processing.", // A
-  "A user has to agree before their information is used.", // B — A's meaning, almost no shared words
-  "The fine can be up to 20 million euros.", // C — unrelated topic
-];
-
-const vectors = await embedMany(sentences);
-
 // Because we normalized to length 1, cosine similarity is just the dot product.
 // Range -1..1; higher = closer in meaning.
 function similarity(a: number[], b: number[]): number {
   return a.reduce((sum, x, i) => sum + x * b[i], 0);
 }
 
-console.log("Vector length:", vectors[0].length, "(expected 384)");
-console.log("\nSimilarity — higher means closer in meaning:");
-console.log("  A vs B (same idea, different words):", similarity(vectors[0], vectors[1]).toFixed(3));
-console.log("  A vs C (unrelated):                  ", similarity(vectors[0], vectors[2]).toFixed(3));
+async function demo() {
+  const sentences = [
+    "The data subject must give consent to the processing.", // A
+    "A user has to agree before their information is used.", // B — A's meaning, almost no shared words
+    "The fine can be up to 20 million euros.", // C — unrelated topic
+  ];
+
+  const vectors = await embedMany(sentences);
+
+  console.log("Vector length:", vectors[0].length, "(expected 384)");
+  console.log("\nSimilarity — higher means closer in meaning:");
+  console.log("  A vs B (same idea, different words):", similarity(vectors[0], vectors[1]).toFixed(3));
+  console.log("  A vs C (unrelated):                  ", similarity(vectors[0], vectors[2]).toFixed(3));
+}
+
+// Run the demo ONLY when this file is executed directly (npm run embed),
+// not when another file imports embed()/embedMany().
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  demo();
+}

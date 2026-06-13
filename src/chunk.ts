@@ -5,6 +5,7 @@
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { CELEX } from "./config.ts";
 import { fetchCelexHtml } from "./sources/eurlex.ts";
 
@@ -135,15 +136,23 @@ export async function chunkGdpr(): Promise<Chunk[]> {
 
 // ---------- Demo: run with `npm run chunk` ----------
 
-const chunks = await chunkGdpr();
+async function demo() {
+  const chunks = await chunkGdpr();
 
-const sizes = chunks.map((c) => c.text.length);
-const avg = Math.round(sizes.reduce((a, b) => a + b, 0) / sizes.length);
+  const sizes = chunks.map((c) => c.text.length);
+  const avg = Math.round(sizes.reduce((a, b) => a + b, 0) / sizes.length);
 
-console.log(`Articles found: ${new Set(chunks.map((c) => c.metadata.article)).size}`);
-console.log(`Chunks produced: ${chunks.length}`);
-console.log(`Chunk size — min: ${Math.min(...sizes)}, avg: ${avg}, max: ${Math.max(...sizes)}`);
+  console.log(`Articles found: ${new Set(chunks.map((c) => c.metadata.article)).size}`);
+  console.log(`Chunks produced: ${chunks.length}`);
+  console.log(`Chunk size — min: ${Math.min(...sizes)}, avg: ${avg}, max: ${Math.max(...sizes)}`);
 
-const sample = chunks.find((c) => c.id === "GDPR_art6_p0")!;
-console.log(`\n--- sample: ${sample.id} (${sample.metadata.title}) ---`);
-console.log(sample.text.slice(0, 600));
+  const sample = chunks.find((c) => c.id === "GDPR_art6_p0")!;
+  console.log(`\n--- sample: ${sample.id} (${sample.metadata.title}) ---`);
+  console.log(sample.text.slice(0, 600));
+}
+
+// Run the demo ONLY when this file is executed directly (npm run chunk),
+// not when store.ts imports chunkGdpr().
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  demo();
+}
