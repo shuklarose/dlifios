@@ -7,7 +7,8 @@
     "probe": "tsx src/probe.ts",
     "chunk": "tsx src/chunk.ts",
     "embed": "tsx src/embed.ts",
-    "store": "tsx src/store.ts"
+    "store": "tsx src/store.ts",
+    "retrieve": "tsx src/retrieve.ts"
   },
   "keywords": [],
   "author": "",

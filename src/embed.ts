@@ -3,6 +3,7 @@
 // is the whole trick of RAG: nearness = relevance.
 
 import { pipeline } from "@huggingface/transformers";
+import { Embeddings } from "@langchain/core/embeddings";
 import { fileURLToPath } from "node:url";
 
 const MODEL = "Xenova/all-MiniLM-L6-v2";
@@ -31,6 +32,22 @@ export async function embedMany(texts: string[]): Promise<number[][]> {
   const extractor = await getExtractor();
   const output = await extractor(texts, { pooling: "mean", normalize: true });
   return output.tolist();
+}
+
+// Adapter: make our local embedder speak LangChain's "Embeddings" language.
+// LangChain calls embedDocuments() for stored texts and embedQuery() for searches.
+// Shared by store.ts (Day 6) and retrieve.ts (Day 7) — same model both ways,
+// which is what puts chunks and questions in the same space.
+export class LocalEmbeddings extends Embeddings {
+  constructor() {
+    super({});
+  }
+  embedDocuments(texts: string[]): Promise<number[][]> {
+    return embedMany(texts);
+  }
+  embedQuery(text: string): Promise<number[]> {
+    return embed(text);
+  }
 }
 
 // ---------- Demo: prove the meaning-space works (npm run embed) ----------
