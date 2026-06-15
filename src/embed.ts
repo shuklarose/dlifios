@@ -1,14 +1,20 @@
-// embed.ts — Day 5: turn text into 384-dim "meaning vectors" with a local model.
+// embed.ts — Day 5: turn text into 768-dim "meaning vectors" with a local model.
 // Same model embeds chunks (Day 6) AND questions (Day 7) — that shared space
 // is the whole trick of RAG: nearness = relevance.
+//
+// Day 14 quality fix: upgraded from all-MiniLM-L6-v2 (384-dim) to
+// all-mpnet-base-v2 (768-dim). MiniLM ranked a procedural Article 6 chunk above
+// the chunk that actually lists the lawful bases (vocabulary overlap beat
+// meaning). mpnet's richer 768-dim space fixes that ranking. Bigger/slower, but
+// for a legal tool, retrieval quality wins.
 
 import { pipeline } from "@huggingface/transformers";
 import { Embeddings } from "@langchain/core/embeddings";
 import { fileURLToPath } from "node:url";
 
-const MODEL = "Xenova/all-MiniLM-L6-v2";
+const MODEL = "Xenova/all-mpnet-base-v2";
 
-// Building the pipeline loads the model (~90 MB) — slow, and we only want it
+// Building the pipeline loads the model (~420 MB) — slow, and we only want it
 // ONCE no matter how many times embed() is called. This "lazy singleton" stores
 // the in-flight promise the first time, then hands the same one back forever.
 let extractorPromise: Promise<any> | null = null;
@@ -20,7 +26,7 @@ function getExtractor() {
   return extractorPromise;
 }
 
-// One text -> one array of 384 numbers.
+// One text -> one array of 768 numbers.
 export async function embed(text: string): Promise<number[]> {
   const extractor = await getExtractor();
   const output = await extractor(text, { pooling: "mean", normalize: true });
@@ -67,7 +73,7 @@ async function demo() {
 
   const vectors = await embedMany(sentences);
 
-  console.log("Vector length:", vectors[0].length, "(expected 384)");
+  console.log("Vector length:", vectors[0].length, "(expected 768)");
   console.log("\nSimilarity — higher means closer in meaning:");
   console.log("  A vs B (same idea, different words):", similarity(vectors[0], vectors[1]).toFixed(3));
   console.log("  A vs C (unrelated):                  ", similarity(vectors[0], vectors[2]).toFixed(3));
