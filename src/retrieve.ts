@@ -5,10 +5,9 @@ import { QdrantVectorStore } from "@langchain/qdrant";
 import { fileURLToPath } from "node:url";
 
 import { LocalEmbeddings } from "./embed.ts";
+import { COLLECTION } from "./config.ts";
 
 process.loadEnvFile();
-
-const COLLECTION = "gdpr";
 
 // Connect to the EXISTING collection (don't re-upload). Lazy singleton so
 // repeated searches reuse one connection and one loaded embedding model.

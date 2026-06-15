@@ -29,3 +29,10 @@ export const CELEX = {
   GDPR: "32016R0679",
   AI_ACT: "32024R1689", // stretch corpus, not ingested until the loop works
 };
+
+// ---- Vector store ----
+// ONE shared collection holds the whole data-protection corpus (GDPR + any act
+// the monitor ingests). Each chunk carries its source/celex/article in metadata,
+// so cross-act questions search everything at once. store.ts + retrieve.ts
+// import this so the name lives in exactly one place.
+export const COLLECTION = "eu_law";

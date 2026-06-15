@@ -1,7 +1,12 @@
-// chunk.ts — Day 4: split the GDPR into article-sized, citation-ready chunks.
+// chunk.ts — Day 4: split an EU act into article-sized, citation-ready chunks.
 // Strategy: the EU already marks every article with <div ... id="art_N">,
 // so we split on THEIR boundaries instead of guessing. Long articles get
 // sub-split, but every piece keeps its article number as metadata.
+//
+// Day 11 generalisation: the splitter was always generic (the "oj-"/"eli-"
+// classes are the EU's standard Official Journal markup, shared across acts),
+// so chunkGdpr() became a thin wrapper over chunkCelex(celex, source). The
+// daily monitor uses chunkCelex() to chunk whatever new act SPARQL detects.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -23,18 +28,19 @@ export interface Chunk {
   };
 }
 
-const CACHE_PATH = "data/gdpr.html";
 const MAX_CHUNK_CHARS = 1500;
 
 // ---------- Step 1: get the document (disk cache, fetch once) ----------
 
-async function loadGdprHtml(): Promise<string> {
-  if (existsSync(CACHE_PATH)) {
-    return readFile(CACHE_PATH, "utf8");
+// Cache each act under data/<celex>.html so we only fetch it from Cellar once.
+async function loadCelexHtml(celex: string): Promise<string> {
+  const cachePath = `data/${celex}.html`;
+  if (existsSync(cachePath)) {
+    return readFile(cachePath, "utf8");
   }
-  const html = await fetchCelexHtml(CELEX.GDPR);
+  const html = await fetchCelexHtml(celex);
   await mkdir("data", { recursive: true });
-  await writeFile(CACHE_PATH, html, "utf8");
+  await writeFile(cachePath, html, "utf8");
   return html;
 }
 
@@ -64,7 +70,12 @@ interface ArticleSection {
 
 function splitArticles(html: string): ArticleSection[] {
   const markers = [...html.matchAll(/<div class="eli-subdivision" id="art_(\d+)">/g)];
-  const finalBlock = html.indexOf('<div class="oj-final">'); // signatures start here
+
+  // Signatures/annexes start at oj-final. If an act lacks that marker,
+  // indexOf returns -1 — fall back to the end of the document so the last
+  // article isn't truncated.
+  const finalBlockRaw = html.indexOf('<div class="oj-final">');
+  const finalBlock = finalBlockRaw === -1 ? html.length : finalBlockRaw;
 
   return markers.map((marker, i) => {
     const start = marker.index!;
@@ -103,8 +114,11 @@ function splitIntoPieces(text: string, maxChars: number): string[] {
 
 // ---------- Step 5: assemble the chunks ----------
 
-export async function chunkGdpr(): Promise<Chunk[]> {
-  const html = await loadGdprHtml();
+// Chunk ANY EU act by CELEX. `source` is a short human label used in the chunk
+// id and metadata (e.g. "GDPR"); it defaults to the CELEX for acts we don't
+// have a nickname for. Returns one Chunk per article-piece.
+export async function chunkCelex(celex: string, source: string = celex): Promise<Chunk[]> {
+  const html = await loadCelexHtml(celex);
   const articles = splitArticles(html);
   const chunks: Chunk[] = [];
 
@@ -118,11 +132,11 @@ export async function chunkGdpr(): Promise<Chunk[]> {
         part === 0 ? piece : `Article ${art.article} — ${art.title} (continued):\n${piece}`;
 
       chunks.push({
-        id: `GDPR_art${art.article}_p${part}`,
+        id: `${source}_art${art.article}_p${part}`,
         text,
         metadata: {
-          source: "GDPR",
-          celex: CELEX.GDPR,
+          source,
+          celex,
           article: art.article,
           title: art.title,
           part,
@@ -132,6 +146,11 @@ export async function chunkGdpr(): Promise<Chunk[]> {
   }
 
   return chunks;
+}
+
+// The GDPR is just one act with a friendly name — chunkCelex does the work.
+export function chunkGdpr(): Promise<Chunk[]> {
+  return chunkCelex(CELEX.GDPR, "GDPR");
 }
 
 // ---------- Demo: run with `npm run chunk` ----------
