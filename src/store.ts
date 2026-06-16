@@ -18,6 +18,29 @@ import { CELEX, COLLECTION } from "./config.ts";
 // Load QDRANT_URL / QDRANT_API_KEY from .env into process.env (Node built-in).
 process.loadEnvFile();
 
+// One place that builds the raw Qdrant client (for ops LangChain doesn't wrap:
+// delete collection, payload index, filtered scroll).
+function qdrant(): QdrantClient {
+  return new QdrantClient({
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_API_KEY,
+  });
+}
+
+// hasCelex() filters on this field, and Qdrant REQUIRES a payload index to
+// filter — without it the filter errors. We (re)create the index after every
+// upsert, because a reset drops the collection and its indexes with it.
+async function ensureCelexIndex(client: QdrantClient): Promise<void> {
+  try {
+    await client.createPayloadIndex(COLLECTION, {
+      field_name: "metadata.celex",
+      field_schema: "keyword",
+    });
+  } catch {
+    // Already exists — Qdrant rejects a duplicate index; that's fine.
+  }
+}
+
 // Embed one act (by CELEX) and store its chunks in the shared collection.
 //   - reset:false (default) ADDS the act to whatever's already there — this is
 //     what the daily monitor wants when a NEW act appears.
@@ -29,14 +52,12 @@ export async function ingestCelex(
   source: string = celex,
   opts: { reset?: boolean } = {}
 ): Promise<number> {
+  const client = qdrant();
+
   if (opts.reset) {
     // deleteCollection is a no-op if it doesn't exist. Qdrant rejects vectors
     // whose size doesn't match an existing collection, so a reset is required
     // when the embedding dimension changes (384-dim MiniLM -> 768-dim mpnet).
-    const client = new QdrantClient({
-      url: process.env.QDRANT_URL,
-      apiKey: process.env.QDRANT_API_KEY,
-    });
     console.log(`Resetting collection "${COLLECTION}"...`);
     await client.deleteCollection(COLLECTION);
   }
@@ -54,6 +75,13 @@ export async function ingestCelex(
       })
   );
 
+  // Not every act has article markup (decisions, corrigenda, etc.). With no
+  // chunks there's nothing to embed — bail cleanly so the monitor can skip it.
+  if (documents.length === 0) {
+    console.log(`No article structure in ${source} (${celex}) — nothing stored.`);
+    return 0;
+  }
+
   console.log(`Embedding ${documents.length} chunks and upserting to Qdrant...`);
 
   // fromDocuments creates the collection (size 768, cosine) if missing, embeds
@@ -65,6 +93,10 @@ export async function ingestCelex(
     collectionName: COLLECTION,
   });
 
+  // The collection now exists for sure — make metadata.celex filterable so
+  // hasCelex() works (idempotent dedup for the daily monitor).
+  await ensureCelexIndex(client);
+
   console.log(`Done. Stored ${documents.length} chunks from ${source} in "${COLLECTION}".`);
   return documents.length;
 }
@@ -72,6 +104,24 @@ export async function ingestCelex(
 // The base corpus: a clean rebuild of the collection from the GDPR.
 export function ingestGdpr(): Promise<number> {
   return ingestCelex(CELEX.GDPR, "GDPR", { reset: true });
+}
+
+// Is this act already in the corpus? The monitor uses this to stay idempotent —
+// it skips acts it has already ingested instead of creating duplicate chunks.
+// We ask Qdrant for a single point whose metadata.celex matches; one hit = yes.
+export async function hasCelex(celex: string): Promise<boolean> {
+  try {
+    const res = await qdrant().scroll(COLLECTION, {
+      filter: { must: [{ key: "metadata.celex", match: { value: celex } }] },
+      limit: 1,
+      with_payload: false,
+      with_vector: false,
+    });
+    return res.points.length > 0;
+  } catch {
+    // Collection doesn't exist yet -> nothing is ingested.
+    return false;
+  }
 }
 
 // Run a full GDPR rebuild ONLY when executed directly (npm run store),

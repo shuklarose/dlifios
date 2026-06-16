@@ -5,6 +5,7 @@
 //
 //   POST /ask     { "question": "...", "k"?: number }       -> { answer, sources }
 //   POST /ingest  { "celex"?, "source"?, "reset"? }          -> { stored, celex, source }
+//   POST /monitor { "since"?: "YYYY-MM-DD" }                  -> { since, found, ingested, skipped }
 //   GET  /                                                   -> health/info
 
 import { Hono } from "hono";
@@ -12,6 +13,7 @@ import { serve } from "@hono/node-server";
 
 import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
+import { monitorNewActs } from "./monitor.ts";
 
 // A Hono app is just a collection of routes. Each handler gets a "context" `c`
 // holding the request and helpers to build the response (c.json, c.req, etc.).
@@ -72,6 +74,29 @@ app.post("/ingest", async (c) => {
   } catch (err) {
     console.error("/ingest failed:", err);
     return c.json({ error: "Ingestion failed" }, 500);
+  }
+});
+
+// The daily watch loop: detect new data-protection acts and ingest them.
+// n8n's Cron workflow POSTs here once a day. `since` defaults to 7 days back —
+// a daily run only needs a small window, with hasCelex() catching overlaps.
+app.post("/monitor", async (c) => {
+  let body: { since?: string } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+
+  const since =
+    body.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  try {
+    const result = await monitorNewActs(since);
+    return c.json(result);
+  } catch (err) {
+    console.error("/monitor failed:", err);
+    return c.json({ error: "Monitor run failed" }, 500);
   }
 });
 

@@ -10,7 +10,8 @@
     "store": "tsx src/store.ts",
     "retrieve": "tsx src/retrieve.ts",
     "ask": "tsx src/answer.ts",
-    "serve": "tsx src/server.ts"
+    "serve": "tsx src/server.ts",
+    "monitor": "tsx src/monitor.ts"
   },
   "keywords": [],
   "author": "",
