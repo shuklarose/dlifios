@@ -6,6 +6,7 @@
 //   POST /ask     { "question": "...", "k"?: number }       -> { answer, sources }
 //   POST /ingest  { "celex"?, "source"?, "reset"? }          -> { stored, celex, source }
 //   POST /monitor { "since"?: "YYYY-MM-DD" }                  -> { since, found, ingested, skipped }
+//   POST /digest  { "since"?: "YYYY-MM-DD" }                  -> { since, subject, body, acts, guidance }
 //   GET  /                                                   -> health/info
 
 import { Hono } from "hono";
@@ -14,6 +15,7 @@ import { serve } from "@hono/node-server";
 import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
 import { monitorNewActs } from "./monitor.ts";
+import { buildDigest } from "./digest.ts";
 
 // A Hono app is just a collection of routes. Each handler gets a "context" `c`
 // holding the request and helpers to build the response (c.json, c.req, etc.).
@@ -97,6 +99,29 @@ app.post("/monitor", async (c) => {
   } catch (err) {
     console.error("/monitor failed:", err);
     return c.json({ error: "Monitor run failed" }, 500);
+  }
+});
+
+// The weekly digest: summarise the week's new acts + EDPB guidance into an
+// email-ready {subject, body}. n8n's weekly Schedule POSTs here, then hands
+// subject/body to a Gmail node. `since` defaults to 7 days back.
+app.post("/digest", async (c) => {
+  let body: { since?: string } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+
+  const since =
+    body.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  try {
+    const digest = await buildDigest(since);
+    return c.json(digest);
+  } catch (err) {
+    console.error("/digest failed:", err);
+    return c.json({ error: "Digest generation failed" }, 500);
   }
 });
 

@@ -11,7 +11,8 @@
     "retrieve": "tsx src/retrieve.ts",
     "ask": "tsx src/answer.ts",
     "serve": "tsx src/server.ts",
-    "monitor": "tsx src/monitor.ts"
+    "monitor": "tsx src/monitor.ts",
+    "digest": "tsx src/digest.ts"
   },
   "keywords": [],
   "author": "",
