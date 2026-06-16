@@ -62,6 +62,8 @@ covering new EU developments since ${since}. Summarise the items below into a co
 scannable plain-text email with two sections: "New EU acts" and "EDPB guidance".
 Use ONLY the items listed — do not invent developments or details. If a section has no
 items, write "Nothing new this week." under it.
+Output ONLY the email body — do NOT include a "Subject:" line (the subject is set
+separately). A short opening line is fine, but no email headers.
 
 NEW EU ACTS:
 ${actsList}
