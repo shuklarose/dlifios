@@ -10,9 +10,10 @@ import { search } from "./retrieve.ts";
 process.loadEnvFile();
 
 // temperature 0 = least "creative", most faithful to the passages — what we want
-// for legal answers. gemini-2.5-flash is the current free-tier Flash model.
+// for legal answers. gemini-3.5-flash (GA mid-2026) gives near-Pro reasoning at
+// Flash cost/speed — upgraded from 2.5-flash for better legal reasoning.
 const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
+  model: "gemini-3.5-flash",
   temperature: 0,
   apiKey: process.env.GEMINI_API_KEY,
 });

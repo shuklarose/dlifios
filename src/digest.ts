@@ -15,7 +15,7 @@ process.loadEnvFile();
 // Same Gemini config as answer.ts: temperature 0 so the digest reports only
 // what's in the lists, never inventing developments.
 const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
+  model: "gemini-3.5-flash",
   temperature: 0,
   apiKey: process.env.GEMINI_API_KEY,
 });
