@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DlíFios — EU Data-Protection Q&A</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --card: #181b22;
+        --border: #272b35;
+        --text: #e8eaed;
+        --muted: #9aa0aa;
+        --accent: #5b8cff;
+        --accent-soft: #1f2a44;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+      header h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.5px; }
+      header p { margin: 0 0 28px; color: var(--muted); }
+      .ask {
+        display: flex; gap: 10px; margin-bottom: 14px;
+      }
+      .ask input {
+        flex: 1; padding: 14px 16px; border-radius: 10px;
+        border: 1px solid var(--border); background: var(--card); color: var(--text);
+        font-size: 16px; outline: none;
+      }
+      .ask input:focus { border-color: var(--accent); }
+      .ask button {
+        padding: 0 22px; border: 0; border-radius: 10px; cursor: pointer;
+        background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+      }
+      .ask button:disabled { opacity: 0.5; cursor: default; }
+      .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+      .examples button {
+        border: 1px solid var(--border); background: transparent; color: var(--muted);
+        padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+      }
+      .examples button:hover { color: var(--text); border-color: var(--accent); }
+      .answer {
+        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        padding: 22px 24px; white-space: pre-wrap; word-wrap: break-word; display: none;
+      }
+      .answer.show { display: block; }
+      .answer strong { color: #fff; }
+      .status { color: var(--muted); font-size: 14px; }
+      .sources { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+      .sources h3 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+      .chip {
+        display: inline-block; background: var(--accent-soft); color: #cdd9ff;
+        border-radius: 8px; padding: 5px 11px; margin: 0 6px 6px 0; font-size: 13px;
+      }
+      footer { margin-top: 40px; color: var(--muted); font-size: 13px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>DlíFios</h1>
+        <p>Ask about EU data-protection law — answers cited to the article.</p>
+      </header>
+
+      <div class="ask">
+        <input id="q" type="text" placeholder="e.g. What are the lawful bases for processing personal data?" autocomplete="off" />
+        <button id="go">Ask</button>
+      </div>
+
+      <div class="examples" id="examples"></div>
+
+      <div class="answer" id="answer"></div>
+
+      <footer>Grounded in the GDPR + EU AI Act. Answers come only from retrieved law — no answer is invented.</footer>
+    </div>
+
+    <script>
+      const qEl = document.getElementById("q");
+      const goEl = document.getElementById("go");
+      const answerEl = document.getElementById("answer");
+      const examplesEl = document.getElementById("examples");
+
+      const EXAMPLES = [
+        "What are the lawful bases for processing personal data?",
+        "What rights does a data subject have to access their data?",
+        "What AI practices are prohibited?",
+        "When must a data breach be notified?",
+      ];
+
+      // Tiny, safe markdown-ish render: escape HTML, then **bold** and bullet dashes.
+      function render(text) {
+        const esc = text
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return esc
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/^\s*[\*\-]\s+/gm, "• ");
+      }
+
+      async function ask(question) {
+        if (!question.trim()) return;
+        goEl.disabled = true;
+        answerEl.className = "answer show";
+        answerEl.innerHTML = '<div class="status">Searching the law and composing a cited answer…</div>';
+
+        try {
+          const res = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+          const data = await res.json();
+
+          // Unique sources, preserving order.
+          const sources = [...new Set(data.sources || [])];
+          const chips = sources.map((s) => '<span class="chip">' + render(s) + "</span>").join("");
+
+          answerEl.innerHTML =
+            "<div>" + render(data.answer || "") + "</div>" +
+            (chips ? '<div class="sources"><h3>Sources</h3>' + chips + "</div>" : "");
+        } catch (err) {
+          answerEl.innerHTML = '<div class="status">Something went wrong: ' + err.message + "</div>";
+        } finally {
+          goEl.disabled = false;
+        }
+      }
+
+      goEl.addEventListener("click", () => ask(qEl.value));
+      qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(qEl.value); });
+
+      EXAMPLES.forEach((ex) => {
+        const b = document.createElement("button");
+        b.textContent = ex;
+        b.addEventListener("click", () => { qEl.value = ex; ask(ex); });
+        examplesEl.appendChild(b);
+      });
+    </script>
+  </body>
+</html>

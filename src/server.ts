@@ -7,10 +7,13 @@
 //   POST /ingest  { "celex"?, "source"?, "reset"? }          -> { stored, celex, source }
 //   POST /monitor { "since"?: "YYYY-MM-DD" }                  -> { since, found, ingested, skipped }
 //   POST /digest  { "since"?: "YYYY-MM-DD" }                  -> { since, subject, body, acts, guidance }
-//   GET  /                                                   -> health/info
+//   GET  /                                                   -> the chat UI (Day 13)
+//   GET  /health                                             -> health/info
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
@@ -21,8 +24,14 @@ import { buildDigest } from "./digest.ts";
 // holding the request and helpers to build the response (c.json, c.req, etc.).
 const app = new Hono();
 
+// The chat UI (Day 13). Served from the SAME origin as /ask, so the page can
+// fetch("/ask") with no CORS and no hardcoded URL — and it deploys with the API.
+// Resolve the path relative to this file (src/) so cwd doesn't matter.
+const UI_PATH = fileURLToPath(new URL("../public/index.html", import.meta.url));
+app.get("/", (c) => c.html(readFileSync(UI_PATH, "utf8")));
+
 // Health check — handy for "is the server up?" and for n8n to ping.
-app.get("/", (c) => c.json({ name: "DlíFios API", status: "ok" }));
+app.get("/health", (c) => c.json({ name: "DlíFios API", status: "ok" }));
 
 // The star: ask a question, get a grounded, article-cited answer.
 app.post("/ask", async (c) => {
