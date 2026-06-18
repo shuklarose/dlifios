@@ -3,96 +3,1145 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DlíFios — EU Data-Protection Q&A</title>
+    <title>DlíFios — Know the Law. Stay Ahead.</title>
+    <meta
+      name="description"
+      content="DlíFios is an AI-powered legal intelligence assistant for EU data-protection law. Cited, trustworthy answers from official EU sources."
+    />
+
+    <!-- Fonts: Lora (serif display, for the logo + headlines) and Inter (sans, body).
+         Loaded with fallbacks so the page still reads well if the CDN is blocked. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
+      /* ============================================================
+         DESIGN TOKENS
+         One source of truth for colour and type. Changing a brand
+         colour means editing it here once, not in 40 rules.
+         ============================================================ */
       :root {
-        --bg: #0f1115;
-        --card: #181b22;
-        --border: #272b35;
-        --text: #e8eaed;
-        --muted: #9aa0aa;
-        --accent: #5b8cff;
-        --accent-soft: #1f2a44;
+        /* Surfaces */
+        --page-bg: #14171b;     /* dark gutter the framed page floats on */
+        --surface: #ffffff;     /* cards + main page background */
+        --surface-2: #f6f8f6;   /* alternating light section */
+        --line: #e7eae6;        /* hairline borders on light */
+
+        /* Ink (text on light) */
+        --ink: #1b211d;
+        --ink-soft: #5d675f;
+
+        /* Brand greens */
+        --green: #1a9d54;       /* primary buttons / accents */
+        --green-strong: #15833f;/* hover */
+        --green-tint: #eaf6ef;  /* soft green fill behind icons */
+
+        /* Hero (dark) palette */
+        --hero-text: #f1f5f1;
+        --hero-muted: #a9b4ac;
+        --hero-green: #46c178;  /* "Stay Ahead." + accents on dark */
+        --hero-line: rgba(255, 255, 255, 0.1);
+
+        /* Deep teal-green hero palette (provided) */
+        --dark-bg: #021115;
+        --deep-green: #0c3b2e;
+        --almost-black-green: #001117;
+        --accent-green: #8fbf8a;
+        --gold-glow: #d8c56a;
+
+        --radius: 14px;
+        --shadow-sm: 0 1px 2px rgba(16, 24, 20, 0.06), 0 1px 3px rgba(16, 24, 20, 0.05);
+        --shadow-md: 0 10px 30px rgba(16, 24, 20, 0.08);
+
+        --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --serif: "Lora", Georgia, "Times New Roman", serif;
       }
+
+      /* ============================================================
+         RESET / BASE
+         ============================================================ */
       * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
       body {
         margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--surface);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
       }
-      .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
-      header h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.5px; }
-      header p { margin: 0 0 28px; color: var(--muted); }
-      .ask {
-        display: flex; gap: 10px; margin-bottom: 14px;
+      a { color: inherit; text-decoration: none; }
+      img, svg { display: block; }
+      button { font-family: inherit; cursor: pointer; }
+
+      /* The whole site is framed as a rounded card on a dark backdrop,
+         exactly like the mockup. On phones we drop the frame to full-bleed. */
+      /* Full-bleed: each section's background spans the whole viewport width. */
+      .page {
+        width: 100%;
+        background: var(--surface);
+        overflow: hidden;
       }
-      .ask input {
-        flex: 1; padding: 14px 16px; border-radius: 10px;
-        border: 1px solid var(--border); background: var(--card); color: var(--text);
-        font-size: 16px; outline: none;
+
+      /* The centered content column. Section BACKGROUNDS go full width (on the
+         section element); the .pad wrapper INSIDE keeps text in a readable,
+         centered column so it doesn't stretch edge-to-edge on big monitors. */
+      .pad {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 40px;
+        padding-right: 40px;
       }
-      .ask input:focus { border-color: var(--accent); }
-      .ask button {
-        padding: 0 22px; border: 0; border-radius: 10px; cursor: pointer;
-        background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+
+      /* ============================================================
+         NAVBAR  (lives inside the dark hero band)
+         ============================================================ */
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 22px;
+        padding-bottom: 22px;
       }
-      .ask button:disabled { opacity: 0.5; cursor: default; }
-      .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-      .examples button {
-        border: 1px solid var(--border); background: transparent; color: var(--muted);
-        padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 22px;
+        color: var(--hero-text);
       }
-      .examples button:hover { color: var(--text); border-color: var(--accent); }
-      .answer {
-        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-        padding: 22px 24px; white-space: pre-wrap; word-wrap: break-word; display: none;
+      .brand .shield { color: var(--hero-green); width: 26px; height: 26px; }
+      .brand-mark { width: 42px; height: 42px; object-fit: contain; flex: none; }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 30px;
       }
-      .answer.show { display: block; }
-      .answer strong { color: #fff; }
-      .status { color: var(--muted); font-size: 14px; }
-      .sources { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
-      .sources h3 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-      .chip {
-        display: inline-block; background: var(--accent-soft); color: #cdd9ff;
-        border-radius: 8px; padding: 5px 11px; margin: 0 6px 6px 0; font-size: 13px;
+      .nav-links a {
+        color: var(--hero-muted);
+        font-size: 14.5px;
+        font-weight: 500;
+        transition: color 0.15s;
       }
-      footer { margin-top: 40px; color: var(--muted); font-size: 13px; text-align: center; }
+      .nav-links a:hover { color: var(--hero-text); }
+
+      .nav-cta { display: flex; align-items: center; gap: 12px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 14.5px;
+        font-weight: 600;
+        padding: 10px 18px;
+        transition: background 0.15s, border-color 0.15s, transform 0.05s;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-ghost {
+        background: transparent;
+        color: var(--hero-text);
+        border: 1px solid var(--hero-line);
+      }
+      .btn-ghost:hover { border-color: rgba(255, 255, 255, 0.32); }
+      .btn-primary { background: var(--green); color: #fff; }
+      .btn-primary:hover { background: var(--green-strong); }
+
+      /* Hamburger — hidden on desktop, shown on mobile. */
+      .hamburger {
+        display: none;
+        background: transparent;
+        border: 0;
+        color: var(--hero-text);
+        padding: 6px;
+      }
+
+      /* ============================================================
+         HERO
+         ============================================================ */
+      .hero {
+        position: relative;
+        background:
+          radial-gradient(circle at 70% 25%, var(--deep-green) 0%, var(--dark-bg) 45%, var(--almost-black-green) 100%);
+        color: var(--hero-text);
+        overflow: hidden;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 30px;
+        align-items: center;
+        padding-top: 26px;
+        padding-bottom: 70px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(70, 193, 120, 0.1);
+        border: 1px solid rgba(70, 193, 120, 0.25);
+        color: #cdeada;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 13px;
+        border-radius: 999px;
+        margin-bottom: 26px;
+      }
+      .pill .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--hero-green);
+        box-shadow: 0 0 0 3px rgba(70, 193, 120, 0.25);
+      }
+
+      .hero h1 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(38px, 5.2vw, 58px);
+        line-height: 1.05;
+        letter-spacing: -1px;
+        margin: 0 0 20px;
+      }
+      .hero h1 .ahead { color: var(--hero-green); display: block; }
+
+      .hero-sub {
+        color: var(--hero-muted);
+        font-size: 18px;
+        max-width: 30ch;
+        margin: 0 0 24px;
+      }
+
+      .checks { list-style: none; margin: 0 0 30px; padding: 0; display: grid; gap: 12px; }
+      .checks li { display: flex; align-items: center; gap: 11px; font-size: 15.5px; color: #dde6df; }
+      .checks .tick {
+        flex: none;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: rgba(70, 193, 120, 0.16);
+        color: var(--hero-green);
+        display: grid; place-items: center;
+      }
+      .checks .tick svg { width: 12px; height: 12px; }
+
+      .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+      .btn-lg { padding: 13px 22px; font-size: 15px; }
+
+      /* ---- The code-drawn globe + floating notification cards ---- */
+      .globe-wrap {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        max-width: 440px;
+        margin-left: auto;
+      }
+      #globe { width: 100%; height: 100%; }
+      .globe-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: none;          /* shown only once the file successfully loads */
+      }
+
+      .float-card {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(13, 24, 18, 0.72);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 10px 13px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        animation: bob 6s ease-in-out infinite;
+      }
+      .float-card .fc-icon {
+        width: 30px; height: 30px; border-radius: 8px;
+        display: grid; place-items: center; flex: none;
+      }
+      .float-card .fc-icon svg { width: 16px; height: 16px; }
+      .fc-title { font-size: 13px; font-weight: 600; color: var(--hero-text); line-height: 1.2; }
+      .fc-sub { font-size: 11.5px; color: var(--hero-muted); }
+
+      .fc-1 { top: 6%; left: 4%; animation-delay: 0s; }
+      .fc-1 .fc-icon { background: rgba(59, 130, 246, 0.18); color: #7eb0ff; }
+      .fc-2 { top: 40%; right: -6%; animation-delay: -2s; }
+      .fc-2 .fc-icon { background: rgba(70, 193, 120, 0.18); color: var(--hero-green); }
+      .fc-3 { bottom: 8%; left: -4%; animation-delay: -4s; }
+      .fc-3 .fc-icon { background: rgba(234, 179, 8, 0.18); color: #f4cd57; }
+
+      @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-9px); }
+      }
+
+      /* ============================================================
+         TRUST BAR (logos)
+         ============================================================ */
+      .trustbar {
+        border-bottom: 1px solid var(--line);
+        padding-top: 24px;
+        padding-bottom: 24px;
+        text-align: center;
+      }
+      .trustbar .label {
+        color: var(--ink-soft);
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      .logos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        flex-wrap: wrap;
+      }
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--ink);
+        font-weight: 600;
+        font-size: 15px;
+        opacity: 0.85;
+      }
+      .logo .lmark { width: 24px; height: 24px; flex: none; }
+      .oj-badge {
+        border: 1.5px solid #2f5fd0;
+        color: #2f5fd0;
+        font-weight: 700;
+        font-size: 11px;
+        border-radius: 5px;
+        padding: 1px 4px;
+        font-family: var(--serif);
+      }
+
+      /* ============================================================
+         "WHAT IS DLÍFIOS?" — feature grid
+         ============================================================ */
+      .section { padding-top: 64px; padding-bottom: 64px; }
+      .section-head { text-align: center; max-width: 620px; margin: 0 auto 44px; }
+      .section-head h2 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(26px, 3.4vw, 34px);
+        margin: 0 0 12px;
+        letter-spacing: -0.4px;
+      }
+      .section-head p { color: var(--ink-soft); margin: 0; font-size: 16px; }
+      .leaf { color: var(--green); width: 22px; height: 22px; margin: 0 auto 12px; }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+      .feature {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px 20px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .feature:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+      .feature .ficon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--green-tint);
+        color: var(--green);
+        display: grid; place-items: center;
+        margin-bottom: 16px;
+      }
+      .feature .ficon svg { width: 20px; height: 20px; }
+      .feature h3 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+      .feature p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+
+      /* ============================================================
+         ASK DLÍFIOS — the real, working tool
+         ============================================================ */
+      .ask-section { background: var(--surface-2); border-top: 1px solid var(--line); }
+
+      .ask-bar {
+        display: flex;
+        gap: 0;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 7px 7px 7px 18px;
+        max-width: 720px;
+        margin: 0 auto 16px;
+        box-shadow: var(--shadow-sm);
+      }
+      .ask-bar input {
+        flex: 1;
+        border: 0;
+        outline: none;
+        font-size: 15.5px;
+        color: var(--ink);
+        background: transparent;
+      }
+      .ask-bar input::placeholder { color: #9aa39c; }
+      .send-btn {
+        flex: none;
+        width: 40px; height: 40px;
+        border: 0; border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: grid; place-items: center;
+        transition: background 0.15s;
+      }
+      .send-btn:hover { background: var(--green-strong); }
+      .send-btn:disabled { opacity: 0.55; cursor: default; }
+      .send-btn svg { width: 18px; height: 18px; }
+
+      .chips {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        max-width: 720px;
+        margin: 0 auto 26px;
+      }
+      .chip-q {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .chip-q:hover { border-color: var(--green); color: var(--ink); }
+      .chip-q svg { width: 13px; height: 13px; opacity: 0.6; }
+
+      /* The chat panel: sidebar + answer area inside one bordered card. */
+      .chat-panel {
+        display: grid;
+        grid-template-columns: 168px 1fr;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        max-width: 920px;
+        margin: 0 auto;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+      }
+      .chat-side {
+        border-right: 1px solid var(--line);
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .side-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        text-align: left;
+        transition: background 0.12s, color 0.12s;
+      }
+      .side-item:hover { background: var(--surface-2); color: var(--ink); }
+      .side-item svg { width: 15px; height: 15px; flex: none; opacity: 0.75; }
+
+      .chat-main { padding: 24px 26px; min-height: 320px; }
+      .ans-q { font-size: 16px; font-weight: 600; margin: 0 0 14px; }
+      .ans-body { font-size: 14.5px; color: #2c352e; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }
+      .ans-body strong { color: var(--ink); font-weight: 600; }
+      .status { color: var(--ink-soft); font-size: 14px; }
+
+      .ans-sources { margin-top: 22px; }
+      .ans-sources h4 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--ink-soft); margin: 0 0 10px;
+      }
+      .src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: src; }
+      .src-list li {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13.5px; color: var(--ink);
+      }
+      .src-list li::before {
+        counter-increment: src;
+        content: counter(src) ".";
+        color: var(--ink-soft);
+        font-variant-numeric: tabular-nums;
+        flex: none;
+      }
+      .src-tag {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--green-strong);
+        background: var(--green-tint);
+        border-radius: 5px;
+        padding: 1px 7px;
+      }
+
+      .ans-foot {
+        margin-top: 22px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ans-foot .disclaimer { font-size: 12px; color: var(--ink-soft); }
+      .ans-tools { display: flex; gap: 6px; }
+      .icon-btn {
+        background: transparent; border: 0; color: #9aa39c;
+        width: 30px; height: 30px; border-radius: 7px;
+        display: grid; place-items: center;
+        transition: background 0.12s, color 0.12s;
+      }
+      .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+      .icon-btn svg { width: 15px; height: 15px; }
+
+      /* ============================================================
+         TRUST BAND ("Built on trust. Backed by law.")
+         ============================================================ */
+      .trust-band-wrap { padding-top: 0; padding-bottom: 56px; }
+      .trust-band {
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 26px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+        flex-wrap: wrap;
+      }
+      .tb-left { display: flex; align-items: center; gap: 16px; max-width: 420px; }
+      .tb-left .tb-shield {
+        width: 44px; height: 44px; border-radius: 11px;
+        background: var(--green-tint); color: var(--green);
+        display: grid; place-items: center; flex: none;
+      }
+      .tb-left .tb-shield svg { width: 22px; height: 22px; }
+      .tb-left h3 { margin: 0 0 4px; font-size: 16px; font-family: var(--serif); }
+      .tb-left p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+      .tb-badges { display: flex; gap: 28px; flex-wrap: wrap; }
+      .tb-badge { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-soft); max-width: 120px; }
+      .tb-badge .b-ic { color: var(--green); flex: none; }
+      .tb-badge .b-ic svg { width: 18px; height: 18px; }
+      .tb-badge b { color: var(--ink); font-weight: 600; display: block; }
+
+      /* ============================================================
+         FOOTER
+         ============================================================ */
+      .footer {
+        background: #0c130f;
+        color: #cdd6cf;
+      }
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr 1fr 1fr;
+        gap: 30px;
+        padding-top: 48px;
+        padding-bottom: 32px;
+      }
+      .footer .brand { color: #fff; margin-bottom: 12px; }
+      .footer-about { font-size: 13.5px; color: #8b968c; max-width: 26ch; }
+      .footer h4 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+        color: #7f8a80; margin: 0 0 14px; font-weight: 600;
+      }
+      .footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+      .footer ul a { font-size: 13.5px; color: #aeb8af; }
+      .footer ul a:hover { color: #fff; }
+
+      .footer-bottom {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 18px;
+        padding-bottom: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .footer-bottom .copy { font-size: 12.5px; color: #7f8a80; }
+      .socials { display: flex; gap: 14px; }
+      .socials a { color: #8b968c; }
+      .socials a:hover { color: #fff; }
+      .socials svg { width: 18px; height: 18px; }
+
+      /* ============================================================
+         MOBILE MENU (hidden until hamburger toggles it)
+         ============================================================ */
+      .mobile-menu {
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0 0 18px;
+      }
+      .mobile-menu.open { display: flex; }
+      .mobile-menu a {
+        color: var(--hero-muted);
+        padding: 10px 4px;
+        font-size: 15px;
+        border-bottom: 1px solid var(--hero-line);
+      }
+      .mobile-menu .mm-cta { display: flex; gap: 10px; margin-top: 14px; }
+      .mobile-menu .mm-cta .btn { flex: 1; justify-content: center; }
+
+      /* tiny toast for "coming soon" decorative actions */
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%) translateY(20px);
+        background: #1b211d;
+        color: #fff;
+        font-size: 13px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 50;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+      /* ============================================================
+         RESPONSIVE  — tablet then phone
+         ============================================================ */
+      @media (max-width: 880px) {
+        .pad { padding-left: 24px; padding-right: 24px; }
+        .features { grid-template-columns: repeat(2, 1fr); }
+        .hero-grid { grid-template-columns: 1fr; gap: 10px; padding-bottom: 48px; }
+        .globe-wrap { display: none; }           /* phone hides the globe (matches mockup) */
+        .nav-links, .nav-cta { display: none; }
+        .hamburger { display: block; }
+      }
+
+      @media (max-width: 560px) {
+        .page { margin: 0; border-radius: 0; }
+        .pad { padding-left: 18px; padding-right: 18px; }
+        .features { grid-template-columns: 1fr; }
+        .hero h1 { font-size: 40px; }
+        .hero-actions .btn-secondary { display: none; }  /* phone shows only the primary CTA */
+        .hero-actions .btn { width: 100%; justify-content: center; }
+
+        /* Chat panel: sidebar becomes a bottom tab strip, like the phone mockup. */
+        .chat-panel { grid-template-columns: 1fr; }
+        .chat-side {
+          order: 2;
+          flex-direction: row;
+          justify-content: space-around;
+          border-right: 0;
+          border-top: 1px solid var(--line);
+          padding: 8px 4px;
+        }
+        .side-item { flex-direction: column; gap: 4px; font-size: 10.5px; padding: 6px 4px; }
+        .chat-main { order: 1; padding: 20px 18px; }
+
+        .footer-grid { grid-template-columns: 1fr 1fr; }
+        .trust-band { padding: 22px; }
+      }
     </style>
   </head>
+
   <body>
-    <div class="wrap">
-      <header>
-        <h1>DlíFios</h1>
-        <p>Ask about EU data-protection law — answers cited to the article.</p>
+    <div class="page">
+      <!-- ===================== HERO (dark) ===================== -->
+      <header class="hero">
+        <nav class="nav pad">
+          <a class="brand" href="#top">
+            <img class="brand-mark" src="/assets/logo.png" alt=""
+              onerror="this.style.display='none'" />
+            DlíFios
+          </a>
+
+          <div class="nav-links">
+            <a href="#what">Features</a>
+            <a href="#what">How it works</a>
+            <a href="#trust">Coverage</a>
+            <a href="#trust">About</a>
+            <a href="#" data-soon>Pricing</a>
+          </div>
+
+          <div class="nav-cta">
+            <button class="btn btn-ghost" data-soon>Log in</button>
+            <a class="btn btn-primary" href="#ask">Try DlíFios</a>
+          </div>
+
+          <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          </button>
+        </nav>
+
+        <!-- Mobile nav drawer -->
+        <div class="mobile-menu pad" id="mobileMenu">
+          <a href="#what">Features</a>
+          <a href="#what">How it works</a>
+          <a href="#trust">Coverage</a>
+          <a href="#trust">About</a>
+          <a href="#" data-soon>Pricing</a>
+          <div class="mm-cta">
+            <button class="btn btn-ghost" data-soon>Log in</button>
+            <a class="btn btn-primary" href="#ask">Try DlíFios</a>
+          </div>
+        </div>
+
+        <div class="hero-grid pad" id="top">
+          <div class="hero-copy">
+            <span class="pill"><span class="dot"></span> EU Law Watcher. Always Current.</span>
+
+            <h1>Know the Law.<span class="ahead">Stay Ahead.</span></h1>
+
+            <p class="hero-sub">
+              DlíFios is your AI-powered legal intelligence assistant for EU law and beyond.
+            </p>
+
+            <ul class="checks">
+              <li>
+                <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>
+                Real-time legal updates
+              </li>
+              <li>
+                <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>
+                Cited, trustworthy answers
+              </li>
+              <li>
+                <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>
+                Built for professionals
+              </li>
+            </ul>
+
+            <div class="hero-actions">
+              <a class="btn btn-primary btn-lg" href="#ask">
+                Try the Q&amp;A Tool
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+              <a class="btn btn-ghost btn-lg btn-secondary" href="#what">Explore Features</a>
+            </div>
+          </div>
+
+          <!-- Your globe render drops in at /assets/globe.png. Until it loads,
+               the code-drawn <canvas> globe shows as a graceful fallback. -->
+          <div class="globe-wrap">
+            <canvas id="globe" aria-hidden="true"></canvas>
+            <img id="globeImg" class="globe-img" src="/assets/globe.png" alt="" />
+
+            <div class="float-card fc-1">
+              <span class="fc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </span>
+              <div><div class="fc-title">New Regulation</div><div class="fc-sub">Published today</div></div>
+            </div>
+
+            <div class="float-card fc-2">
+              <span class="fc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="m2 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+              </span>
+              <div><div class="fc-title">CJEU Judgment</div><div class="fc-sub">Case C-123/24</div></div>
+            </div>
+
+            <div class="float-card fc-3">
+              <span class="fc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+              </span>
+              <div><div class="fc-title">Directive Update</div><div class="fc-sub">In Official Journal</div></div>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div class="ask">
-        <input id="q" type="text" placeholder="e.g. What are the lawful bases for processing personal data?" autocomplete="off" />
-        <button id="go">Ask</button>
-      </div>
+      <!-- ===================== TRUST BAR ===================== -->
+      <section class="trustbar">
+        <div class="pad">
+        <div class="label">Trusted legal intelligence from official EU sources</div>
+        <div class="logos">
+          <span class="logo">
+            <svg class="lmark" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="11" fill="#1a3aa8"/>
+              <g fill="#ffd617">
+                <circle cx="12" cy="4.2" r="1"/><circle cx="15.9" cy="5.2" r="1"/>
+                <circle cx="18.8" cy="8.1" r="1"/><circle cx="19.8" cy="12" r="1"/>
+                <circle cx="18.8" cy="15.9" r="1"/><circle cx="15.9" cy="18.8" r="1"/>
+                <circle cx="12" cy="19.8" r="1"/><circle cx="8.1" cy="18.8" r="1"/>
+                <circle cx="5.2" cy="15.9" r="1"/><circle cx="4.2" cy="12" r="1"/>
+                <circle cx="5.2" cy="8.1" r="1"/><circle cx="8.1" cy="5.2" r="1"/>
+              </g>
+            </svg>
+            EUR-Lex
+          </span>
+          <span class="logo">
+            <svg class="lmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="m2 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+            Curia
+          </span>
+          <span class="logo">
+            <svg class="lmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-dasharray="3 3" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+            EUR-Lex API
+          </span>
+          <span class="logo"><span class="oj-badge">OJ</span> EU Official Journal</span>
+        </div>
+        </div>
+      </section>
 
-      <div class="examples" id="examples"></div>
+      <!-- ===================== WHAT IS DLÍFIOS ===================== -->
+      <section class="section pad" id="what">
+        <div class="section-head">
+          <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+          <h2>What is DlíFios?</h2>
+          <p>DlíFios watches legal developments across the EU and turns complexity into clarity.
+            Ask questions. Get answers. With citations you can trust.</p>
+        </div>
 
-      <div class="answer" id="answer"></div>
+        <div class="features">
+          <article class="feature">
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+            <h3>Legal Intelligence</h3>
+            <p>We monitor legislation, judgments, and official publications in real time.</p>
+          </article>
+          <article class="feature">
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
+            <h3>AI-Powered Answers</h3>
+            <p>Get clear, concise answers with sources from trusted EU institutions.</p>
+          </article>
+          <article class="feature">
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+            <h3>Always Up-to-Date</h3>
+            <p>Stay ahead with real-time alerts on legal changes that matter.</p>
+          </article>
+          <article class="feature">
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <h3>For Professionals</h3>
+            <p>Designed for lawyers, researchers, policymakers, and businesses.</p>
+          </article>
+        </div>
+      </section>
 
-      <footer>Grounded in the GDPR + EU AI Act. Answers come only from retrieved law — no answer is invented.</footer>
+      <!-- ===================== ASK DLÍFIOS (real tool) ===================== -->
+      <section class="section ask-section" id="ask">
+        <div class="pad">
+        <div class="section-head">
+          <h2>Ask DlíFios</h2>
+          <p>Your legal research copilot.</p>
+        </div>
+
+        <div class="ask-bar">
+          <input id="q" type="text" autocomplete="off"
+            placeholder="Ask a question about EU law..." />
+          <button class="send-btn" id="go" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="chips" id="chips"></div>
+
+        <div class="chat-panel">
+          <aside class="chat-side">
+            <button class="side-item" id="newChat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              New Chat
+            </button>
+            <button class="side-item" data-soon>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+              History
+            </button>
+            <button class="side-item" data-soon>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              Alerts
+            </button>
+            <button class="side-item" data-soon>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              Bookmarks
+            </button>
+          </aside>
+
+          <div class="chat-main" id="chatMain">
+            <!-- Initial state: a static sample answer so the panel looks alive on
+                 first load (and screenshots). The moment you ask anything, this is
+                 replaced by a LIVE answer from POST /ask. -->
+            <p class="ans-q">What are the key provisions of the AI Act?</p>
+            <div class="ans-body">The EU AI Act (Regulation (EU) 2024/1689) introduces a risk-based framework for AI systems. Key provisions include:
+• Prohibition of unacceptable-risk AI practices (e.g., social scoring by public authorities).
+• High-risk AI systems must meet strict requirements for transparency, human oversight, and robustness.
+• Obligations for transparency in AI systems interacting with individuals.
+• Establishment of governance at EU and national levels.
+
+The Act is phased in from August 2024 and fully applicable by August 2026.</div>
+            <div class="ans-sources">
+              <h4>Sources</h4>
+              <ul class="src-list">
+                <li>Regulation (EU) 2024/1689 — AI Act <span class="src-tag">EUR-Lex</span></li>
+                <li>Official Journal of the EU, L 2024/1689 <span class="src-tag">OJ</span></li>
+                <li>European Commission — AI Act overview <span class="src-tag">EUR-Lex</span></li>
+              </ul>
+            </div>
+            <div class="ans-foot">
+              <span class="disclaimer">Answer generated by DlíFios AI. Please verify critical information.</span>
+              <div class="ans-tools">
+                <button class="icon-btn" data-soon aria-label="Helpful"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg></button>
+                <button class="icon-btn" data-soon aria-label="Not helpful"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg></button>
+                <button class="icon-btn" data-soon aria-label="Bookmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <!-- ===================== TRUST BAND ===================== -->
+      <section class="trust-band-wrap pad" id="trust">
+        <div class="trust-band">
+          <div class="tb-left">
+            <span class="tb-shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <div>
+              <h3>Built on trust. Backed by law.</h3>
+              <p>DlíFios uses official EU sources and advanced AI to deliver accurate, reliable, and citable answers.</p>
+            </div>
+          </div>
+          <div class="tb-badges">
+            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span><b>Official Sources</b>Only</span></div>
+            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg></span><span><b>Cited &amp;</b>Verifiable</span></div>
+            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><span><b>Privacy</b>Focused</span></div>
+            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span><span><b>Secure &amp;</b>Reliable</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== FOOTER ===================== -->
+      <footer class="footer">
+        <div class="footer-grid pad">
+          <div>
+            <div class="brand">
+              <img class="brand-mark" src="/assets/logo.png" alt=""
+                onerror="this.style.display='none'" />
+              DlíFios
+            </div>
+            <p class="footer-about">AI-powered legal intelligence for EU law and beyond.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <ul>
+              <li><a href="#what">Features</a></li>
+              <li><a href="#trust">Coverage</a></li>
+              <li><a href="#" data-soon>Pricing</a></li>
+              <li><a href="#" data-soon>Changelog</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Company</h4>
+            <ul>
+              <li><a href="#" data-soon>About</a></li>
+              <li><a href="#" data-soon>Blog</a></li>
+              <li><a href="#" data-soon>Careers</a></li>
+              <li><a href="#" data-soon>Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="#" data-soon>Privacy Policy</a></li>
+              <li><a href="#" data-soon>Terms of Service</a></li>
+              <li><a href="#" data-soon>Cookie Policy</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom pad">
+          <span class="copy">© 2026 DlíFios. All rights reserved.</span>
+          <div class="socials">
+            <a href="#" data-soon aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.34 18.34V9.99H5.67v8.35zM7 8.84a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.5v-4.58c0-2.45-1.31-3.59-3.06-3.59a2.64 2.64 0 0 0-2.39 1.31v-1.13h-2.67v8.35h2.67v-4.62c0-1.22.23-2.4 1.74-2.4s1.51 1.39 1.51 2.48v4.54z"/></svg></a>
+            <a href="https://github.com" data-soon aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 0 0 8.84 21.5c.5.08.66-.22.66-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.1-1.47-1.1-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.16.57.67.48A10 10 0 0 0 12 2z"/></svg></a>
+          </div>
+        </div>
+      </footer>
     </div>
 
+    <div class="toast" id="toast">Coming soon</div>
+
     <script>
+      /* =====================================================================
+         1) NAV: mobile menu toggle + "coming soon" toast for decorative links
+         ===================================================================== */
+      const hamburger = document.getElementById("hamburger");
+      const mobileMenu = document.getElementById("mobileMenu");
+      hamburger.addEventListener("click", () => {
+        const open = mobileMenu.classList.toggle("open");
+        hamburger.setAttribute("aria-expanded", String(open));
+      });
+      // Close the drawer after tapping any link inside it.
+      mobileMenu.querySelectorAll("a").forEach((a) =>
+        a.addEventListener("click", () => {
+          mobileMenu.classList.remove("open");
+          hamburger.setAttribute("aria-expanded", "false");
+        })
+      );
+
+      // Decorative buttons (Login, Pricing, History, Alerts...) aren't built yet.
+      // Be honest about it with a tiny toast instead of a dead click.
+      const toast = document.getElementById("toast");
+      let toastTimer;
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 1600);
+      }
+      document.querySelectorAll("[data-soon]").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          showToast("Coming soon");
+        })
+      );
+
+      /* =====================================================================
+         2) THE GLOBE — a rotating sphere of dots drawn on <canvas>.
+         How it works:
+           • Scatter N points evenly on a unit sphere (Fibonacci spiral).
+           • Tilt them once so the sphere has a pleasing axis.
+           • Each frame, rotate every point around the Y axis, project the
+             3D (x,y,z) to 2D screen coords, and draw a dot whose size and
+             opacity depend on depth (z) so the front looks closer/brighter.
+         Respects prefers-reduced-motion (renders a still frame).
+         ===================================================================== */
+      (function globe() {
+        const canvas = document.getElementById("globe");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const DPR = Math.min(window.devicePixelRatio || 1, 2);
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // If the user's globe render loads, swap to it and stop the animation.
+        // If it 404s (not added yet), drop it and keep the canvas fallback.
+        let stop = false;
+        const img = document.getElementById("globeImg");
+        if (img) {
+          img.addEventListener("load", () => {
+            img.style.display = "block";
+            canvas.style.display = "none";
+            stop = true;
+          });
+          img.addEventListener("error", () => img.remove());
+        }
+
+        let W = 0, H = 0, cx = 0, cy = 0, R = 0;
+        function resize() {
+          const r = canvas.getBoundingClientRect();
+          W = r.width; H = r.height;
+          canvas.width = Math.round(W * DPR);
+          canvas.height = Math.round(H * DPR);
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+          cx = W / 2; cy = H / 2;
+          R = Math.min(W, H) * 0.42;
+        }
+        resize();
+        window.addEventListener("resize", resize);
+
+        // Build the sphere once. Pre-tilt around the X axis (~ -23°, Earth-like).
+        const N = 720;
+        const tilt = -0.4;
+        const ct = Math.cos(tilt), st = Math.sin(tilt);
+        const pts = [];
+        for (let i = 0; i < N; i++) {
+          const phi = Math.acos(1 - (2 * (i + 0.5)) / N);   // 0..π from pole to pole
+          const theta = Math.PI * (1 + Math.sqrt(5)) * i;    // golden-angle spiral
+          let x = Math.sin(phi) * Math.cos(theta);
+          let y = Math.cos(phi);
+          let z = Math.sin(phi) * Math.sin(theta);
+          // apply fixed tilt around X
+          const y2 = y * ct - z * st;
+          const z2 = y * st + z * ct;
+          pts.push({ x, y: y2, z: z2 });
+        }
+
+        let rot = 0;
+        function draw() {
+          ctx.clearRect(0, 0, W, H);
+          if (W && H) {
+            // Soft atmospheric glow behind the sphere.
+            const g = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.35);
+            g.addColorStop(0, "rgba(70,193,120,0.16)");
+            g.addColorStop(1, "rgba(70,193,120,0)");
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+
+            const cos = Math.cos(rot), sin = Math.sin(rot);
+            for (const p of pts) {
+              // rotate around Y
+              const x = p.x * cos - p.z * sin;
+              const z = p.x * sin + p.z * cos;
+              const depth = (z + 1) / 2;                 // 0 (back) .. 1 (front)
+              const sx = cx + x * R;
+              const sy = cy + p.y * R;
+              ctx.beginPath();
+              ctx.fillStyle = `rgba(74,222,128,${0.12 + depth * 0.6})`;
+              ctx.arc(sx, sy, 0.6 + depth * 1.7, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          if (stop) return;
+          if (!reduce) rot += 0.0016;
+          requestAnimationFrame(draw);
+        }
+        draw();
+      })();
+
+      /* =====================================================================
+         3) THE ASK TOOL — the only "real" part. POSTs to /ask and renders the
+         cited answer, replacing the static sample card.
+         ===================================================================== */
       const qEl = document.getElementById("q");
       const goEl = document.getElementById("go");
-      const answerEl = document.getElementById("answer");
-      const examplesEl = document.getElementById("examples");
+      const chatMain = document.getElementById("chatMain");
+      const chipsEl = document.getElementById("chips");
 
+      // Example questions. NOTE: the CJEU one mirrors the mockup but our corpus
+      // has no case law yet — it will honestly answer "I don't know". We'll fix
+      // that when we "plan the missing parts".
       const EXAMPLES = [
-        "What are the lawful bases for processing personal data?",
-        "What rights does a data subject have to access their data?",
-        "What AI practices are prohibited?",
-        "When must a data breach be notified?",
+        "What are the latest updates to the AI Act?",
+        "Summarize CJEU case C-123/24",
+        "What changed in the GDPR recently?",
       ];
 
-      // Tiny, safe markdown-ish render: escape HTML, then **bold** and bullet dashes.
+      // Safe render: escape HTML first, then turn **bold** + bullet dashes into markup.
       function render(text) {
         const esc = text
           .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -101,12 +1150,31 @@
           .replace(/^\s*[\*\-]\s+/gm, "• ");
       }
 
+      function loadingCard(question) {
+        chatMain.innerHTML =
+          '<p class="ans-q">' + render(question) + "</p>" +
+          '<div class="status">Searching the law and composing a cited answer…</div>';
+      }
+
+      function answerCard(question, answer, sources) {
+        const uniq = [...new Set(sources || [])];
+        const items = uniq
+          .map((s) => "<li>" + render(s) + ' <span class="src-tag">EUR-Lex</span></li>')
+          .join("");
+        chatMain.innerHTML =
+          '<p class="ans-q">' + render(question) + "</p>" +
+          '<div class="ans-body">' + render(answer || "") + "</div>" +
+          (items
+            ? '<div class="ans-sources"><h4>Sources</h4><ul class="src-list">' + items + "</ul></div>"
+            : "") +
+          '<div class="ans-foot"><span class="disclaimer">Answer generated by DlíFios AI. ' +
+          "Please verify critical information.</span></div>";
+      }
+
       async function ask(question) {
         if (!question.trim()) return;
         goEl.disabled = true;
-        answerEl.className = "answer show";
-        answerEl.innerHTML = '<div class="status">Searching the law and composing a cited answer…</div>';
-
+        loadingCard(question);
         try {
           const res = await fetch("/ask", {
             method: "POST",
@@ -115,16 +1183,11 @@
           });
           if (!res.ok) throw new Error("Request failed (" + res.status + ")");
           const data = await res.json();
-
-          // Unique sources, preserving order.
-          const sources = [...new Set(data.sources || [])];
-          const chips = sources.map((s) => '<span class="chip">' + render(s) + "</span>").join("");
-
-          answerEl.innerHTML =
-            "<div>" + render(data.answer || "") + "</div>" +
-            (chips ? '<div class="sources"><h3>Sources</h3>' + chips + "</div>" : "");
+          answerCard(question, data.answer, data.sources);
         } catch (err) {
-          answerEl.innerHTML = '<div class="status">Something went wrong: ' + err.message + "</div>";
+          chatMain.innerHTML =
+            '<p class="ans-q">' + render(question) + "</p>" +
+            '<div class="status">Something went wrong: ' + err.message + "</div>";
         } finally {
           goEl.disabled = false;
         }
@@ -133,11 +1196,26 @@
       goEl.addEventListener("click", () => ask(qEl.value));
       qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(qEl.value); });
 
+      // Build the example chips.
       EXAMPLES.forEach((ex) => {
         const b = document.createElement("button");
-        b.textContent = ex;
+        b.className = "chip-q";
+        b.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 9a2.5 2.5 0 1 1 3 2.5c-.7.3-1.5 1-1.5 2"/>' +
+          '<circle cx="12" cy="17" r="0.5"/></svg>' + ex;
         b.addEventListener("click", () => { qEl.value = ex; ask(ex); });
-        examplesEl.appendChild(b);
+        chipsEl.appendChild(b);
+      });
+
+      // "New Chat" actually works: reset the panel to a friendly empty state.
+      document.getElementById("newChat").addEventListener("click", () => {
+        qEl.value = "";
+        chatMain.innerHTML =
+          '<p class="ans-q">Ask a question to get started</p>' +
+          '<div class="status">Your cited answer will appear here. ' +
+          "Try one of the example questions above, or type your own.</div>";
+        qEl.focus();
       });
     </script>
   </body>

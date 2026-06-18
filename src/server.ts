@@ -12,6 +12,7 @@
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +30,11 @@ const app = new Hono();
 // Resolve the path relative to this file (src/) so cwd doesn't matter.
 const UI_PATH = fileURLToPath(new URL("../public/index.html", import.meta.url));
 app.get("/", (c) => c.html(readFileSync(UI_PATH, "utf8")));
+
+// Static assets — logo, globe render, etc. live in public/assets and are served
+// at /assets/*. `root` is relative to the cwd the server starts from, which is
+// the project root when launched via `npm run serve`.
+app.use("/assets/*", serveStatic({ root: "./public" }));
 
 // Health check — handy for "is the server up?" and for n8n to ping.
 app.get("/health", (c) => c.json({ name: "DlíFios API", status: "ok" }));
