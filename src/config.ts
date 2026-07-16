@@ -30,6 +30,17 @@ export const CELEX = {
   AI_ACT: "32024R1689", // stretch corpus, not ingested until the loop works
 };
 
+// ---- LLM ----
+// The generation model, in ONE place for the same reason as the endpoints above.
+//
+// Why 2.5-flash and not 3.5-flash: 3.5-flash's free tier is badly oversubscribed
+// — it answers 503 "high demand" on roughly 3 of every 4 calls. LangChain retries
+// 503s with exponential backoff, so those turn into >180s hangs rather than clean
+// failures. 2.5-flash answers the same prompts in ~1.2s on the same key.
+// If this model is ever deprecated, the API returns 404 "no longer available to
+// new users" — swap this line, not answer.ts and digest.ts.
+export const GEMINI_MODEL = "gemini-2.5-flash";
+
 // ---- Vector store ----
 // ONE shared collection holds the whole data-protection corpus (GDPR + any act
 // the monitor ingests). Each chunk carries its source/celex/article in metadata,

@@ -9,13 +9,14 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 import { findNewActs } from "./sources/eurlex.ts";
 import { fetchEdpbItems } from "./sources/edpb.ts";
+import { GEMINI_MODEL } from "./config.ts";
 
 process.loadEnvFile();
 
 // Same Gemini config as answer.ts: temperature 0 so the digest reports only
 // what's in the lists, never inventing developments.
 const model = new ChatGoogleGenerativeAI({
-  model: "gemini-3.5-flash",
+  model: GEMINI_MODEL,
   temperature: 0,
   apiKey: process.env.GEMINI_API_KEY,
 });
