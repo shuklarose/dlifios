@@ -20,6 +20,7 @@ import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
 import { monitorNewActs } from "./monitor.ts";
 import { buildDigest } from "./digest.ts";
+import { identifyCaller, checkQuota, logQuestion } from "./quota.ts";
 
 // A Hono app is just a collection of routes. Each handler gets a "context" `c`
 // holding the request and helpers to build the response (c.json, c.req, etc.).
@@ -53,6 +54,33 @@ app.post("/ask", async (c) => {
   // Validate input — never trust the caller. 400 = "your request was bad".
   if (!body.question || typeof body.question !== "string") {
     return c.json({ error: "Field 'question' (string) is required" }, 400);
+  }
+
+  // --- The quota gate (product phase 1) -------------------------------------
+  // Identify the caller from their Supabase login token (anonymous if none),
+  // then refuse BEFORE spending a paid Gemini call if a signed-up user is over
+  // their daily cap. 429 = "Too Many Requests". Anonymous callers pass through
+  // for now (the public UI is anonymous-only until login ships); their IP-based
+  // cap is the next step.
+  //
+  // NOTE: anonymous /ask currently has no server-side spend cap — closing that
+  // (IP-based) is tracked as the follow-up before this is publicly deployed.
+  let caller;
+  try {
+    caller = await identifyCaller(c.req.header("Authorization"));
+    const quota = await checkQuota(caller);
+    if (!quota.allowed) {
+      return c.json(
+        { error: `Daily limit of ${quota.limit} questions reached. Try again tomorrow.` },
+        429,
+      );
+    }
+    // Log BEFORE the LLM call: the moment we're about to spend money, the
+    // question counts against quota — even if the answer step later fails.
+    await logQuestion(caller, body.question);
+  } catch (err) {
+    console.error("/ask quota check failed:", err);
+    return c.json({ error: "Could not verify request quota" }, 500);
   }
 
   // Do the work. If retrieval or the LLM fails, return 500 rather than crashing
