@@ -20,7 +20,14 @@ import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
 import { monitorNewActs } from "./monitor.ts";
 import { buildDigest } from "./digest.ts";
-import { identifyCaller, checkQuota, logQuestion } from "./quota.ts";
+import {
+  identifyCaller,
+  checkQuota,
+  logQuestion,
+  recordAnonHit,
+  DAILY_LIMIT,
+  ANON_LIMIT,
+} from "./quota.ts";
 
 // A Hono app is just a collection of routes. Each handler gets a "context" `c`
 // holding the request and helpers to build the response (c.json, c.req, etc.).
@@ -39,6 +46,24 @@ app.use("/assets/*", serveStatic({ root: "./public" }));
 
 // Health check — handy for "is the server up?" and for n8n to ping.
 app.get("/health", (c) => c.json({ name: "DlíFios API", status: "ok" }));
+
+// Public browser config. The page needs two values to talk to Supabase Auth:
+// the project URL and the ANON key. Both are public BY DESIGN — the anon key
+// only grants what Row Level Security allows, which is why we spent the effort
+// writing RLS policies. The SERVICE ROLE key is never sent here; it stays on the
+// server where it belongs.
+//
+// Why an endpoint instead of hardcoding them in index.html? Config lives in .env
+// in exactly one place, so deploying to a real domain (or a second environment)
+// means changing .env — never editing HTML.
+app.get("/config", (c) =>
+  c.json({
+    supabaseUrl: process.env.SUPABASE_URL ?? "",
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
+    dailyLimit: DAILY_LIMIT,
+    anonLimit: ANON_LIMIT,
+  }),
+);
 
 // The star: ask a question, get a grounded, article-cited answer.
 app.post("/ask", async (c) => {
@@ -65,19 +90,42 @@ app.post("/ask", async (c) => {
   //
   // NOTE: anonymous /ask currently has no server-side spend cap — closing that
   // (IP-based) is tracked as the follow-up before this is publicly deployed.
+  // Who is this, by IP? Behind a proxy (nginx, Cloudflare) the real client IP
+  // arrives in x-forwarded-for as "client, proxy1, proxy2" — the first entry is
+  // the one we want. Falls back to the socket address for direct connections.
+  const ip =
+    c.req.header("x-forwarded-for")?.split(",")[0].trim() ||
+    c.req.header("x-real-ip") ||
+    c.env?.incoming?.socket?.remoteAddress ||
+    "";
+
   let caller;
+  let used = 0; // questions this caller has spent today, AFTER counting this one
+  let limit = DAILY_LIMIT;
   try {
     caller = await identifyCaller(c.req.header("Authorization"));
-    const quota = await checkQuota(caller);
+    const quota = await checkQuota(caller, ip);
+    limit = quota.limit;
     if (!quota.allowed) {
+      // Two different walls, two different messages. An anonymous visitor who
+      // hits the wall should be told signing up fixes it — that's the funnel.
       return c.json(
-        { error: `Daily limit of ${quota.limit} questions reached. Try again tomorrow.` },
+        {
+          error: caller.id
+            ? `Daily limit of ${quota.limit} questions reached. Try again tomorrow.`
+            : `You've used your ${quota.limit} free questions. Sign up free for ${DAILY_LIMIT} a day.`,
+          signedIn: Boolean(caller.id),
+          used: quota.used,
+          limit: quota.limit,
+        },
         429,
       );
     }
-    // Log BEFORE the LLM call: the moment we're about to spend money, the
+    // Count it BEFORE the LLM call: the moment we're about to spend money, the
     // question counts against quota — even if the answer step later fails.
     await logQuestion(caller, body.question);
+    if (!caller.id && ip) recordAnonHit(ip);
+    used = quota.used + 1; // +1 for the one we just counted
   } catch (err) {
     console.error("/ask quota check failed:", err);
     return c.json({ error: "Could not verify request quota" }, 500);
@@ -87,7 +135,16 @@ app.post("/ask", async (c) => {
   // the whole server.
   try {
     const { answer, sources } = await ask(body.question, body.k ?? 5);
-    return c.json({ question: body.question, answer, sources });
+    // Echo the quota back so the UI can show "3 of 20 used today" without a
+    // second round-trip. signedIn tells the page whether that number is real.
+    return c.json({
+      question: body.question,
+      answer,
+      sources,
+      signedIn: Boolean(caller.id),
+      used,
+      limit,
+    });
   } catch (err) {
     console.error("/ask failed:", err);
     return c.json({ error: "Failed to answer question" }, 500);

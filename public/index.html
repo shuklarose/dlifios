@@ -662,6 +662,92 @@
         .trust-band { padding: 22px; }
       }
     </style>
+    <!-- ===================== AUTH UI ===================== -->
+    <style>
+      /* The modal backdrop. Fixed = pinned to the viewport, not the page flow.
+         We toggle .open rather than display:none so we can fade it. */
+      .auth-wrap {
+        position: fixed; inset: 0; z-index: 60;
+        display: grid; place-items: center;
+        background: rgba(2, 17, 21, 0.62);
+        backdrop-filter: blur(4px);
+        opacity: 0; pointer-events: none; transition: opacity 0.18s ease;
+      }
+      .auth-wrap.open { opacity: 1; pointer-events: auto; }
+
+      .auth-card {
+        width: min(460px, calc(100vw - 32px));
+        max-height: calc(100vh - 48px); overflow-y: auto;
+        background: var(--surface); color: var(--ink);
+        border-radius: 18px; padding: 26px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+        transform: translateY(8px) scale(0.99);
+        transition: transform 0.18s ease;
+      }
+      .auth-wrap.open .auth-card { transform: none; }
+
+      .auth-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+      .auth-head h3 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 4px; }
+      .auth-head p { color: var(--ink-soft); font-size: 14px; margin: 0; }
+      .auth-x {
+        background: none; border: 0; cursor: pointer; color: var(--ink-soft);
+        font-size: 22px; line-height: 1; padding: 2px 6px; border-radius: 8px;
+      }
+      .auth-x:hover { background: var(--surface-2); color: var(--ink); }
+
+      .auth-form { margin-top: 18px; display: grid; gap: 12px; }
+      .auth-row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+      @media (max-width: 480px) { .auth-row { grid-template-columns: 1fr; } }
+
+      .fld { display: grid; gap: 5px; }
+      .fld label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+      .fld input, .fld select {
+        width: 100%; font: inherit; font-size: 14.5px; color: var(--ink);
+        padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+        background: #fff; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .fld input:focus, .fld select:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px var(--green-tint);
+      }
+
+      .auth-submit {
+        margin-top: 4px; width: 100%; font: inherit; font-weight: 650; font-size: 15px;
+        padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+        background: var(--green); color: #fff; transition: background 0.15s;
+      }
+      .auth-submit:hover:not(:disabled) { background: var(--green-strong); }
+      .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+      /* One status line does all the talking: errors, "check your email", etc. */
+      .auth-msg { font-size: 13.5px; line-height: 1.5; margin-top: 12px; display: none; }
+      .auth-msg.show { display: block; }
+      .auth-msg.ok  { color: var(--green-strong); }
+      .auth-msg.err { color: #b4232a; }
+      .auth-fine { margin-top: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+
+      /* The signed-in chip that replaces "Log in" in the nav. */
+      .acct { display: flex; align-items: center; gap: 8px; }
+      /* The browser's default [hidden]{display:none} is a WEAKER rule than our
+         .acct{display:flex}, so without this the account box never hides and you
+         see "Log in" and "Sign out" at the same time. Same for the nav buttons. */
+      .acct[hidden], [data-auth-open][hidden] { display: none !important; }
+      .acct-name {
+        font-size: 13.5px; color: var(--hero-muted);
+        max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      /* The "17 of 20 left today" pill under the ask bar. */
+      .quota-pill {
+        display: none; margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft);
+      }
+      .quota-pill.show { display: block; }
+      .quota-pill b { color: var(--ink); font-weight: 650; }
+
+      /* Bibliography links — underlined on hover so they read as citations,
+         not as buttons. */
+      .src-list a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+      .src-list a:hover { color: var(--green-strong); border-bottom-color: var(--green); }
+    </style>
   </head>
 
   <body>
@@ -675,16 +761,21 @@
             DlíFios
           </a>
 
+          <!-- Two links, two destinations. "How it works" and "About" pointed at
+               the same anchors as these, so they were noise, not navigation. -->
           <div class="nav-links">
             <a href="#what">Features</a>
-            <a href="#what">How it works</a>
             <a href="#trust">Coverage</a>
-            <a href="#trust">About</a>
-            <a href="#" data-soon>Pricing</a>
           </div>
 
           <div class="nav-cta">
-            <button class="btn btn-ghost" data-soon>Log in</button>
+            <!-- Exactly one of these is ever visible: signed out -> Log in,
+                 signed in -> the account box. Swapped by paint() below. -->
+            <button class="btn btn-ghost" data-auth-open>Log in</button>
+            <div class="acct" id="acctBox" hidden>
+              <span class="acct-name" id="acctName"></span>
+              <button class="btn btn-ghost" id="signOut">Sign out</button>
+            </div>
             <a class="btn btn-primary" href="#ask">Try DlíFios</a>
           </div>
 
@@ -697,12 +788,9 @@
         <!-- Mobile nav drawer -->
         <div class="mobile-menu pad" id="mobileMenu">
           <a href="#what">Features</a>
-          <a href="#what">How it works</a>
           <a href="#trust">Coverage</a>
-          <a href="#trust">About</a>
-          <a href="#" data-soon>Pricing</a>
           <div class="mm-cta">
-            <button class="btn btn-ghost" data-soon>Log in</button>
+            <button class="btn btn-ghost" data-auth-open>Log in</button>
             <a class="btn btn-primary" href="#ask">Try DlíFios</a>
           </div>
         </div>
@@ -735,13 +823,14 @@
               </li>
             </ul>
 
+            <!-- One primary action. "Explore Features" duplicated the nav's
+                 Features link, so it competed with the CTA for no benefit. -->
             <div class="hero-actions">
               <a class="btn btn-primary btn-lg" href="#ask">
                 Try the Q&amp;A Tool
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
-              <a class="btn btn-ghost btn-lg btn-secondary" href="#what">Explore Features</a>
             </div>
           </div>
 
@@ -869,6 +958,9 @@
 
         <div class="chips" id="chips"></div>
 
+        <!-- Filled in after each answer, from the quota the server echoes back. -->
+        <p class="quota-pill" id="quotaPill"></p>
+
         <div class="chat-panel">
           <aside class="chat-side">
             <button class="side-item" id="newChat">
@@ -907,10 +999,14 @@
 The Act is phased in from August 2024 and fully applicable by August 2026.</div>
             <div class="ans-sources">
               <h4>Sources</h4>
+              <!-- Static placeholder, replaced by live linked sources on first ask. -->
               <ul class="src-list">
-                <li>Regulation (EU) 2024/1689 — AI Act <span class="src-tag">EUR-Lex</span></li>
-                <li>Official Journal of the EU, L 2024/1689 <span class="src-tag">OJ</span></li>
-                <li>European Commission — AI Act overview <span class="src-tag">EUR-Lex</span></li>
+                <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689"
+                  target="_blank" rel="noopener noreferrer">Regulation (EU) 2024/1689 — AI Act</a>
+                  <span class="src-tag">EUR-Lex</span></li>
+                <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679"
+                  target="_blank" rel="noopener noreferrer">Regulation (EU) 2016/679 — GDPR</a>
+                  <span class="src-tag">EUR-Lex</span></li>
               </ul>
             </div>
             <div class="ans-foot">
@@ -1157,9 +1253,17 @@ The Act is phased in from August 2024 and fully applicable by August 2026.</div>
       }
 
       function answerCard(question, answer, sources) {
-        const uniq = [...new Set(sources || [])];
-        const items = uniq
-          .map((s) => "<li>" + render(s) + ' <span class="src-tag">EUR-Lex</span></li>')
+        // Each source is now { label, act, article, celex, url } — a real
+        // bibliography entry linking to the official text on EUR-Lex.
+        // target=_blank keeps our page open; rel=noopener is the security
+        // companion that stops the opened tab from touching window.opener.
+        const items = (sources || [])
+          .map(
+            (s) =>
+              '<li><a href="' + s.url + '" target="_blank" rel="noopener noreferrer">' +
+              render(s.label) +
+              '</a> <span class="src-tag">EUR-Lex</span></li>',
+          )
           .join("");
         chatMain.innerHTML =
           '<p class="ans-q">' + render(question) + "</p>" +
@@ -1171,19 +1275,49 @@ The Act is phased in from August 2024 and fully applicable by August 2026.</div>
           "Please verify critical information.</span></div>";
       }
 
+      // Show "17 of 20 questions left today" once we know the real numbers.
+      const quotaPill = document.getElementById("quotaPill");
+      function paintQuota(data) {
+        if (!data || typeof data.limit !== "number") { quotaPill.classList.remove("show"); return; }
+        const left = Math.max(0, data.limit - data.used);
+        quotaPill.innerHTML = data.signedIn
+          ? "<b>" + left + "</b> of " + data.limit + " questions left today"
+          : "<b>" + left + "</b> of " + data.limit + " free questions left — " +
+            '<a href="#" data-auth-open>sign up free</a> for 20 a day';
+        quotaPill.classList.add("show");
+      }
+
       async function ask(question) {
         if (!question.trim()) return;
         goEl.disabled = true;
         loadingCard(question);
         try {
+          // If the visitor is signed in, attach their access token. The server
+          // verifies it with Supabase and applies their daily quota. No token =
+          // anonymous, which still works — this is a nudge, not a wall.
+          const headers = { "Content-Type": "application/json" };
+          const token = window.dlifios ? await window.dlifios.token() : null;
+          if (token) headers.Authorization = "Bearer " + token;
+
           const res = await fetch("/ask", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ question }),
           });
-          if (!res.ok) throw new Error("Request failed (" + res.status + ")");
           const data = await res.json();
+
+          // 429 = over the daily cap. Say so plainly instead of a generic error.
+          if (res.status === 429) {
+            chatMain.innerHTML =
+              '<p class="ans-q">' + render(question) + "</p>" +
+              '<div class="status">' + render(data.error || "Daily limit reached.") + "</div>";
+            paintQuota({ signedIn: true, used: data.used, limit: data.limit });
+            return;
+          }
+          if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+
           answerCard(question, data.answer, data.sources);
+          paintQuota(data);
         } catch (err) {
           chatMain.innerHTML =
             '<p class="ans-q">' + render(question) + "</p>" +
@@ -1217,6 +1351,240 @@ The Act is phased in from August 2024 and fully applicable by August 2026.</div>
           "Try one of the example questions above, or type your own.</div>";
         qEl.focus();
       });
+    </script>
+
+    <!-- =====================================================================
+         AUTH: sign up / log in with a magic link (no passwords).
+
+         Why no passwords? We'd have to store hashes, build "forgot password",
+         and handle breaches. A magic link outsources all of that to Supabase:
+         you prove you own the inbox, which is the only thing a password really
+         proves anyway.
+         ===================================================================== -->
+    <div class="auth-wrap" id="authWrap" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="auth-card">
+        <div class="auth-head">
+          <div>
+            <h3 id="authTitle">Create your account</h3>
+            <p>No password. We email you a secure sign-in link.</p>
+          </div>
+          <button class="auth-x" id="authClose" aria-label="Close">&times;</button>
+        </div>
+
+        <!-- novalidate off: we WANT the browser's free email/required checks. -->
+        <form class="auth-form" id="authForm">
+          <div class="fld">
+            <label for="af-email">Work email *</label>
+            <input id="af-email" name="email" type="email" required
+              autocomplete="email" placeholder="you@company.com" />
+          </div>
+
+          <div class="fld">
+            <label for="af-name">Full name *</label>
+            <input id="af-name" name="full_name" type="text" required
+              autocomplete="name" placeholder="Jane Doe" />
+          </div>
+
+          <div class="auth-row">
+            <div class="fld">
+              <label for="af-org">Organisation</label>
+              <input id="af-org" name="org" type="text"
+                autocomplete="organization" placeholder="Acme Ltd" />
+            </div>
+            <div class="fld">
+              <label for="af-size">Company size</label>
+              <select id="af-size" name="employee_count">
+                <option value="">Select…</option>
+                <option>1–10</option>
+                <option>11–50</option>
+                <option>51–200</option>
+                <option>201–1000</option>
+                <option>1000+</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="auth-row">
+            <div class="fld">
+              <label for="af-sector">Sector</label>
+              <select id="af-sector" name="sector">
+                <option value="">Select…</option>
+                <option>Email marketing / Martech</option>
+                <option>Legal &amp; compliance</option>
+                <option>SaaS / Technology</option>
+                <option>Finance</option>
+                <option>Healthcare</option>
+                <option>Public sector</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="fld">
+              <label for="af-phone">Phone</label>
+              <input id="af-phone" name="phone" type="tel"
+                autocomplete="tel" placeholder="+353 …" />
+            </div>
+          </div>
+
+          <button class="auth-submit" id="authSubmit" type="submit">
+            Email me a sign-in link
+          </button>
+        </form>
+
+        <p class="auth-msg" id="authMsg"></p>
+        <p class="auth-fine">
+          Signing in gives you <b id="fineLimit">20</b> questions a day. We store your
+          details to personalise your weekly EU-law digest — nothing else.
+        </p>
+      </div>
+    </div>
+
+    <!-- type="module" so we can `import`. Modules are deferred by default, so
+         this runs after the classic script above has defined ask(). -->
+    <script type="module">
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+      const wrap   = document.getElementById("authWrap");
+      const form   = document.getElementById("authForm");
+      const msgEl  = document.getElementById("authMsg");
+      const submit = document.getElementById("authSubmit");
+      const acctBox  = document.getElementById("acctBox");
+      const acctName = document.getElementById("acctName");
+
+      function say(text, kind) {
+        msgEl.textContent = text;
+        msgEl.className = "auth-msg show " + (kind || "");
+      }
+      const openModal  = () => { wrap.classList.add("open"); document.getElementById("af-email").focus(); };
+      const closeModal = () => wrap.classList.remove("open");
+
+      // Event DELEGATION: one listener on the document instead of one per button.
+      // This matters because the quota pill injects a "sign up free" link AFTER
+      // this code runs — a listener attached now could never have found it.
+      // .closest() walks up from whatever was clicked to the nearest match.
+      document.addEventListener("click", (e) => {
+        const trigger = e.target.closest("[data-auth-open]");
+        if (!trigger) return;
+        e.preventDefault();
+        openModal();
+      });
+      document.getElementById("authClose").addEventListener("click", closeModal);
+      // Click the dark backdrop (but not the card) to dismiss; Esc also works.
+      wrap.addEventListener("click", (e) => { if (e.target === wrap) closeModal(); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+      // --- Connect to Supabase ------------------------------------------------
+      // The URL + anon key come from OUR server's /config, which reads them from
+      // .env. The anon key is safe in the browser: every query it makes is still
+      // filtered by the Row Level Security policies in schema.sql.
+      let supabase = null;
+      try {
+        const cfg = await fetch("/config").then((r) => r.json());
+        document.getElementById("fineLimit").textContent = cfg.dailyLimit ?? 20;
+        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error("Supabase not configured");
+        supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+          auth: {
+            persistSession: true,      // keep the session in localStorage across reloads
+            autoRefreshToken: true,    // silently renew the 1-hour access token
+            detectSessionInUrl: true,  // read the #access_token the magic link returns
+          },
+        });
+      } catch (err) {
+        console.error("[auth] config failed:", err);
+      }
+
+      // --- Session state ------------------------------------------------------
+      // One place decides what the nav looks like. onAuthStateChange fires on
+      // load, on login, on logout and on token refresh — so we never hand-sync.
+      let session = null;
+
+      function paint() {
+        const signedIn = Boolean(session);
+        document.querySelectorAll("[data-auth-open]").forEach((b) => (b.hidden = signedIn));
+        acctBox.hidden = !signedIn;
+        if (signedIn) {
+          const meta = session.user.user_metadata || {};
+          acctName.textContent = meta.full_name || session.user.email;
+        }
+      }
+
+      if (supabase) {
+        supabase.auth.onAuthStateChange((_event, s) => {
+          const justSignedIn = !session && s;
+          session = s;
+          paint();
+          if (justSignedIn) {
+            closeModal();
+            say("", "");
+            // The magic link leaves #access_token=... in the address bar.
+            // Strip it so a copied URL never leaks a live token.
+            history.replaceState(null, "", location.pathname + location.search);
+            showToast("Signed in — " + (s.user.email || ""));
+          }
+        });
+        // onAuthStateChange also delivers the restored session, but ask this
+        // explicitly so `session` is correct even before the first event lands.
+        session = (await supabase.auth.getSession()).data.session;
+        paint();
+      }
+
+      // --- Sign up / sign in --------------------------------------------------
+      // signInWithOtp does BOTH: unknown email -> creates the user; known email
+      // -> just logs them in. The `data` object is written to the auth user's
+      // raw_user_meta_data, which our on_auth_user_created trigger copies into
+      // public.profiles the instant the account exists.
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!supabase) return say("Sign-in is unavailable right now.", "err");
+
+        const f = new FormData(form);
+        const email = String(f.get("email") || "").trim();
+        if (!email) return say("Please enter your email.", "err");
+
+        submit.disabled = true;
+        submit.textContent = "Sending…";
+        say("", "");
+
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: {
+              full_name:      String(f.get("full_name") || "").trim(),
+              org:            String(f.get("org") || "").trim() || null,
+              employee_count: String(f.get("employee_count") || "") || null,
+              sector:         String(f.get("sector") || "") || null,
+              phone:          String(f.get("phone") || "").trim() || null,
+            },
+          },
+        });
+
+        submit.disabled = false;
+        submit.textContent = "Email me a sign-in link";
+        if (error) return say(error.message, "err");
+        say("Check " + email + " — we sent you a sign-in link. It expires in 1 hour.", "ok");
+      });
+
+      document.getElementById("signOut").addEventListener("click", async () => {
+        await supabase?.auth.signOut();
+        session = null;
+        paint();
+        document.getElementById("quotaPill").classList.remove("show");
+        showToast("Signed out");
+      });
+
+      // --- The bridge to ask() -----------------------------------------------
+      // The classic script above calls window.dlifios.token() right before each
+      // fetch("/ask"). Returning the CURRENT access token (not a cached one)
+      // means an auto-refreshed token is always the one that gets sent.
+      window.dlifios = {
+        async token() {
+          if (!supabase) return null;
+          const { data } = await supabase.auth.getSession();
+          return data.session?.access_token ?? null;
+        },
+        signedIn: () => Boolean(session),
+        open: openModal,
+      };
     </script>
   </body>
 </html>

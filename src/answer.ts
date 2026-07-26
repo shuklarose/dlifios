@@ -31,6 +31,35 @@ function cite(m: Record<string, any>): string {
   return `${m.source} Article ${m.article}${sub} — ${m.title}`;
 }
 
+// The citation as a real, clickable bibliography entry.
+//
+// Every chunk carries the act's CELEX number (the EU's permanent id for a legal
+// document, e.g. 32016R0679 = GDPR). EUR-Lex exposes a stable permalink built
+// straight from it, so we can turn any citation into a verifiable link without
+// storing URLs anywhere. That matters for a legal tool: "trust me" is worthless,
+// "here is the official text" is the product.
+export interface Source {
+  label: string;   // "GDPR Article 6 — Lawfulness of processing"
+  act: string;     // "GDPR"
+  article: string; // "6"
+  celex: string;   // "32016R0679"
+  url: string;     // the EUR-Lex permalink
+}
+
+function toSource(m: Record<string, any>): Source {
+  const sub = m.definition ? `(${m.definition})` : "";
+  return {
+    label: cite(m),
+    act: m.source,
+    article: `${m.article}${sub}`,
+    celex: m.celex,
+    // encodeURIComponent turns the ":" into %3A, which EUR-Lex expects.
+    url: `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=${encodeURIComponent(
+      `CELEX:${m.celex}`,
+    )}`,
+  };
+}
+
 function buildPrompt(question: string, context: string): string {
   return `You are a legal assistant answering questions about EU data-protection law.
 The CONTEXT passages may come from DIFFERENT acts (e.g. GDPR, AI_ACT), so every
@@ -64,8 +93,15 @@ export async function ask(question: string, k = 5) {
   const response = await model.invoke(buildPrompt(question, context));
 
   // 4. Hand back the answer plus which articles informed it (for display/citation).
-  const sources = hits.map(([doc]) => cite(doc.metadata));
-  return { answer: response.content as string, sources };
+  // Deduplicate by label: two chunks from the same article are one citation.
+  // A Map keyed on the label keeps the first occurrence and drops repeats,
+  // preserving retrieval order (most relevant first).
+  const byLabel = new Map<string, Source>();
+  for (const [doc] of hits) {
+    const s = toSource(doc.metadata);
+    if (!byLabel.has(s.label)) byLabel.set(s.label, s);
+  }
+  return { answer: response.content as string, sources: [...byLabel.values()] };
 }
 
 // ---------- Demo: the payoff (npm run ask) ----------
@@ -78,7 +114,7 @@ async function demo() {
 
   console.log(answer);
   console.log("\n--- retrieved from ---");
-  for (const s of [...new Set(sources)]) console.log(`  • ${s}`);
+  for (const s of sources) console.log(`  • ${s.label}\n    ${s.url}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

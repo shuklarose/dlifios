@@ -16,6 +16,11 @@ import { supabaseAdmin } from "./supabase.ts";
 // One number, one place to change it.
 export const DAILY_LIMIT = 20;
 
+// Anonymous visitors get a much smaller taste before we ask them to sign up.
+// This is the conversion lever AND the wallet guard: without it, anyone could
+// hammer /ask forever and every question costs us a Gemini call.
+export const ANON_LIMIT = 3;
+
 export interface Caller {
   id: string | null; // Supabase auth user id, or null when anonymous
   email: string | null;
@@ -55,11 +60,46 @@ export interface QuotaResult {
   limit: number;
 }
 
-// The gate. A signed-up user is blocked once they reach DAILY_LIMIT in 24h.
-// Anonymous callers (id === null) are NOT capped here yet — the current public UI
-// is anonymous-only, so an IP-based anonymous cap is the next step (see server.ts).
-export async function checkQuota(caller: Caller): Promise<QuotaResult> {
-  if (!caller.id) return { allowed: true, used: 0, limit: DAILY_LIMIT };
+// --- Anonymous rate limiting (in-memory) ------------------------------------
+// Signed-up users are counted in Postgres because we need that history for the
+// Day-14 eval set. Anonymous hits don't deserve a database round-trip, so we
+// keep them in a plain Map: IP address -> the timestamps of its recent asks.
+//
+// Honest trade-off: this lives in the server's memory, so it resets on restart
+// and wouldn't be shared across multiple server instances. For a single box
+// that's fine, and it's a real cap where before there was none. If we ever run
+// more than one instance, this moves to Redis or the question_log table.
+const anonHits = new Map<string, number[]>();
+const ANON_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function anonUsed(ip: string): number {
+  const cutoff = Date.now() - ANON_WINDOW_MS;
+  // Drop anything older than the window, then keep what's left.
+  const recent = (anonHits.get(ip) ?? []).filter((t) => t > cutoff);
+  if (recent.length) anonHits.set(ip, recent);
+  else anonHits.delete(ip); // don't let the Map grow forever with dead IPs
+  return recent.length;
+}
+
+// Called only when we actually let an anonymous request through.
+export function recordAnonHit(ip: string): void {
+  const recent = anonHits.get(ip) ?? [];
+  recent.push(Date.now());
+  anonHits.set(ip, recent);
+}
+
+// The gate. Two paths:
+//   signed in  -> counted in Postgres, DAILY_LIMIT per rolling 24h
+//   anonymous  -> counted in memory by IP, ANON_LIMIT per rolling 24h
+// Either way the caller cannot skip it, because it runs on the server.
+export async function checkQuota(caller: Caller, ip?: string): Promise<QuotaResult> {
+  if (!caller.id) {
+    // No IP means we can't identify them at all — fail closed to one question
+    // rather than handing out an unlimited free pass.
+    if (!ip) return { allowed: false, used: ANON_LIMIT, limit: ANON_LIMIT };
+    const used = anonUsed(ip);
+    return { allowed: used < ANON_LIMIT, used, limit: ANON_LIMIT };
+  }
   const used = await usedInLast24h(caller.id);
   return { allowed: used < DAILY_LIMIT, used, limit: DAILY_LIMIT };
 }
