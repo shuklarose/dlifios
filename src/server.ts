@@ -34,6 +34,44 @@ import {
 // holding the request and helpers to build the response (c.json, c.req, etc.).
 const app = new Hono();
 
+// Security headers on every response. Each one closes a specific attack:
+//
+//   nosniff          browsers must trust our declared Content-Type instead of
+//                    guessing — stops an uploaded "image" being run as script.
+//   frame-ancestors  nobody can iframe us, which kills clickjacking (an
+//                    invisible DlíFios layered under an attacker's buttons).
+//   referrer-policy  our URLs stop leaking to sites the user clicks through to.
+//   HSTS             after the first visit the browser refuses plain HTTP,
+//                    so a network attacker can't downgrade the connection.
+//   CSP              the big one: scripts may only come from this origin and
+//                    the one CDN we load supabase-js from. If someone ever
+//                    injects a <script src="evil.com">, the browser blocks it.
+//
+// 'unsafe-inline' is present because the page's CSS and JS are inline in
+// index.html. That's a real weakening — the honest fix is moving them to
+// separate files and dropping it, which is a refactor, not a one-liner.
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "DENY");
+  c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  c.header(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://esm.sh",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      // The browser talks directly to Supabase Auth, so it must be allowed.
+      "connect-src 'self' https://*.supabase.co https://esm.sh",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  );
+});
+
 // The chat UI (Day 13). Served from the SAME origin as /ask, so the page can
 // fetch("/ask") with no CORS and no hardcoded URL — and it deploys with the API.
 // Resolve the path relative to this file (src/) so cwd doesn't matter.
@@ -65,6 +103,31 @@ app.get("/config", (c) =>
     anonLimit: ANON_LIMIT,
   }),
 );
+
+// --- Machine-endpoint guard -------------------------------------------------
+// /ingest, /monitor and /digest are called by n8n, never by a browser. They are
+// also the expensive ones: ingest re-embeds the whole corpus (and with
+// reset:true DELETES it first), digest spends Gemini calls. Left open, anyone
+// who learns the URL can drain the API key or destroy the vector store.
+//
+// So they require a shared secret from .env. This is deliberately NOT Supabase
+// auth: the caller is a machine with no user account, and a long random string
+// in n8n's credential store is the right shape for that.
+//
+// Fails CLOSED — if ADMIN_TOKEN isn't configured, the endpoints refuse rather
+// than silently allowing everything. A missing config should never mean "open".
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
+
+function adminOk(c: any): boolean {
+  if (!ADMIN_TOKEN) return false;
+  const supplied = (c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  // Compare full length rather than bailing on the first wrong character, so
+  // response time doesn't leak how much of the token an attacker guessed right.
+  if (supplied.length !== ADMIN_TOKEN.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ADMIN_TOKEN.length; i++) diff |= supplied.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
+  return diff === 0;
+}
 
 // A signed-in user's own question history. Requires a valid token: without one
 // there's no user to scope the query to, so we refuse rather than guess.
@@ -173,6 +236,8 @@ app.post("/ask", async (c) => {
 // for each new act SPARQL detects, ADDING it to the corpus. With no celex it
 // falls back to a clean GDPR rebuild (the base corpus / model-swap path).
 app.post("/ingest", async (c) => {
+  if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
+
   // Body is optional here, so a parse failure just means "no body" -> {}.
   let body: { celex?: string; source?: string; reset?: boolean } = {};
   try {
@@ -201,6 +266,8 @@ app.post("/ingest", async (c) => {
 // n8n's Cron workflow POSTs here once a day. `since` defaults to 7 days back —
 // a daily run only needs a small window, with hasCelex() catching overlaps.
 app.post("/monitor", async (c) => {
+  if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
+
   let body: { since?: string } = {};
   try {
     body = await c.req.json();
@@ -224,6 +291,8 @@ app.post("/monitor", async (c) => {
 // email-ready {subject, body}. n8n's weekly Schedule POSTs here, then hands
 // subject/body to a Gmail node. `since` defaults to 7 days back.
 app.post("/digest", async (c) => {
+  if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
+
   let body: { since?: string } = {};
   try {
     body = await c.req.json();

@@ -16,3 +16,6 @@ Thumbs.db
 
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
+
+# Security checklist reference (not part of the app)
+*.pdf
