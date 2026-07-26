@@ -19,7 +19,15 @@ export const DAILY_LIMIT = 20;
 // Anonymous visitors get a much smaller taste before we ask them to sign up.
 // This is the conversion lever AND the wallet guard: without it, anyone could
 // hammer /ask forever and every question costs us a Gemini call.
-export const ANON_LIMIT = 3;
+//
+// Overridable via .env because the cap is per-IP, and during local development
+// EVERYTHING shares one IP — a curl test from the terminal spends the same
+// budget as the browser. Set ANON_LIMIT=100 in .env while demoing.
+//
+// Known limitation of per-IP limiting generally: an office behind a single NAT
+// gateway shares one budget, so ten colleagues get three questions between them.
+// Signed-in users are counted per account, which is why signup is the real fix.
+export const ANON_LIMIT = Number(process.env.ANON_LIMIT ?? 3);
 
 export interface Caller {
   id: string | null; // Supabase auth user id, or null when anonymous
@@ -102,6 +110,25 @@ export async function checkQuota(caller: Caller, ip?: string): Promise<QuotaResu
   }
   const used = await usedInLast24h(caller.id);
   return { allowed: used < DAILY_LIMIT, used, limit: DAILY_LIMIT };
+}
+
+// A signed-in user's recent questions, newest first.
+//
+// We've been writing every question to question_log since the quota gate
+// shipped — this just reads it back, which is why "History" costs one query
+// rather than a new feature. Anonymous callers get nothing: their rows have
+// user_id = null and belong to no one in particular.
+export async function recentQuestions(userId: string, limit = 20): Promise<
+  { question: string; created_at: string }[]
+> {
+  const { data, error } = await supabaseAdmin
+    .from("question_log")
+    .select("question, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
 }
 
 // Record the question. user_id is null for anonymous — the schema allows it, so

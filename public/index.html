@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DlíFios — Know the Law. Stay Ahead.</title>
+
+    <!-- The browser-tab icon. Same logo as the nav, so the tab is recognisable
+         when the user has twenty tabs open. apple-touch-icon is the same file
+         under the name iOS looks for when a page is saved to the home screen. -->
+    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="apple-touch-icon" href="/assets/logo.png" />
     <meta
       name="description"
       content="DlíFios is an AI-powered legal intelligence assistant for EU data-protection law. Cited, trustworthy answers from official EU sources."
@@ -528,7 +534,11 @@
       /* ============================================================
          TRUST BAND ("Built on trust. Backed by law.")
          ============================================================ */
-      .trust-band-wrap { padding-top: 0; padding-bottom: 56px; }
+      /* padding-top was 0, which left the tinted trust card almost touching the
+         tinted ask-section above it — two --surface-2 blocks with only a thin
+         white sliver between, so they read as one broken shape. An explicit top
+         gutter separates them and balances the space below. */
+      .trust-band-wrap { padding-top: 48px; padding-bottom: 64px; }
       .trust-band {
         background: var(--surface-2);
         border: 1px solid var(--line);
@@ -978,54 +988,24 @@
                 stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               New Chat
             </button>
-            <button class="side-item" data-soon>
+            <!-- History is REAL: every question already lands in question_log,
+                 so this just reads back what we were storing all along.
+                 Alerts and Bookmarks were removed — nothing behind them. -->
+            <button class="side-item" id="histBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
               History
             </button>
-            <button class="side-item" data-soon>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              Alerts
-            </button>
-            <button class="side-item" data-soon>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-              Bookmarks
-            </button>
           </aside>
 
+          <!-- Starts empty and honest. It previously showed an invented AI Act
+               answer with real-looking citations that no retrieval produced —
+               exactly the hallucination this whole product exists to prevent. -->
           <div class="chat-main" id="chatMain">
-            <!-- Initial state: a static sample answer so the panel looks alive on
-                 first load (and screenshots). The moment you ask anything, this is
-                 replaced by a LIVE answer from POST /ask. -->
-            <p class="ans-q">What are the key provisions of the AI Act?</p>
-            <div class="ans-body">The EU AI Act (Regulation (EU) 2024/1689) introduces a risk-based framework for AI systems. Key provisions include:
-• Prohibition of unacceptable-risk AI practices (e.g., social scoring by public authorities).
-• High-risk AI systems must meet strict requirements for transparency, human oversight, and robustness.
-• Obligations for transparency in AI systems interacting with individuals.
-• Establishment of governance at EU and national levels.
-
-The Act is phased in from August 2024 and fully applicable by August 2026.</div>
-            <div class="ans-sources">
-              <h4>Sources</h4>
-              <!-- Static placeholder, replaced by live linked sources on first ask. -->
-              <ul class="src-list">
-                <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689"
-                  target="_blank" rel="noopener noreferrer">Regulation (EU) 2024/1689 — AI Act</a>
-                  <span class="src-tag">EUR-Lex</span></li>
-                <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679"
-                  target="_blank" rel="noopener noreferrer">Regulation (EU) 2016/679 — GDPR</a>
-                  <span class="src-tag">EUR-Lex</span></li>
-              </ul>
-            </div>
-            <div class="ans-foot">
-              <span class="disclaimer">Answer generated by DlíFios AI. Please verify critical information.</span>
-              <div class="ans-tools">
-                <button class="icon-btn" data-soon aria-label="Helpful"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg></button>
-                <button class="icon-btn" data-soon aria-label="Not helpful"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg></button>
-                <button class="icon-btn" data-soon aria-label="Bookmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
-              </div>
+            <p class="ans-q">Ask a question to get started</p>
+            <div class="status">
+              Your answer will appear here, with links to the official EU texts it came from.
+              Try one of the example questions above, or type your own.
             </div>
           </div>
         </div>
@@ -1346,6 +1326,53 @@ The Act is phased in from August 2024 and fully applicable by August 2026.</div>
           '<circle cx="12" cy="17" r="0.5"/></svg>' + ex;
         b.addEventListener("click", () => { qEl.value = ex; ask(ex); });
         chipsEl.appendChild(b);
+      });
+
+      // History: fetch this user's own past questions and list them. Clicking
+      // one re-asks it. Needs the token — the server scopes the query to
+      // whoever that token belongs to, so you can only ever see your own.
+      document.getElementById("histBtn").addEventListener("click", async () => {
+        const token = window.dlifios ? await window.dlifios.token() : null;
+        if (!token) {
+          chatMain.innerHTML =
+            '<p class="ans-q">History</p>' +
+            '<div class="status">Sign in to keep a history of your questions. ' +
+            '<a href="#" data-auth-open>Sign up free</a>.</div>';
+          return;
+        }
+        chatMain.innerHTML = '<p class="ans-q">History</p><div class="status">Loading…</div>';
+        try {
+          const res = await fetch("/history", { headers: { Authorization: "Bearer " + token } });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed");
+          if (!data.questions.length) {
+            chatMain.innerHTML =
+              '<p class="ans-q">History</p>' +
+              '<div class="status">No questions yet. Ask one and it will show up here.</div>';
+            return;
+          }
+          // Build the list as DOM nodes rather than an HTML string, so each
+          // question's text can never be parsed as markup.
+          chatMain.innerHTML = '<p class="ans-q">Your recent questions</p>';
+          const ul = document.createElement("ul");
+          ul.className = "src-list";
+          data.questions.forEach((row) => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = "#ask";
+            a.textContent = row.question;
+            a.addEventListener("click", () => { qEl.value = row.question; ask(row.question); });
+            const when = document.createElement("span");
+            when.className = "src-tag";
+            when.textContent = new Date(row.created_at).toLocaleDateString();
+            li.append(a, " ", when);
+            ul.appendChild(li);
+          });
+          chatMain.appendChild(ul);
+        } catch (err) {
+          chatMain.innerHTML =
+            '<p class="ans-q">History</p><div class="status">' + err.message + "</div>";
+        }
       });
 
       // "New Chat" actually works: reset the panel to a friendly empty state.

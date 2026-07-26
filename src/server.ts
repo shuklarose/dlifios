@@ -25,6 +25,7 @@ import {
   checkQuota,
   logQuestion,
   recordAnonHit,
+  recentQuestions,
   DAILY_LIMIT,
   ANON_LIMIT,
 } from "./quota.ts";
@@ -64,6 +65,23 @@ app.get("/config", (c) =>
     anonLimit: ANON_LIMIT,
   }),
 );
+
+// A signed-in user's own question history. Requires a valid token: without one
+// there's no user to scope the query to, so we refuse rather than guess.
+// 401 = "you aren't authenticated", which is different from 403 "you are, but
+// you're not allowed" — the browser uses that difference to prompt a login.
+app.get("/history", async (c) => {
+  const caller = await identifyCaller(c.req.header("Authorization"));
+  if (!caller.id) return c.json({ error: "Sign in to see your history" }, 401);
+
+  try {
+    const questions = await recentQuestions(caller.id);
+    return c.json({ questions });
+  } catch (err) {
+    console.error("/history failed:", err);
+    return c.json({ error: "Could not load history" }, 500);
+  }
+});
 
 // The star: ask a question, get a grounded, article-cited answer.
 app.post("/ask", async (c) => {
