@@ -1,0 +1,201 @@
+<!--
+  privacy.html — the privacy policy.
+
+  Written from the code, not from a template: every item below corresponds to a
+  real field in schema.sql or a real outbound call in src/. If we ever collect
+  something new, this file changes in the same commit.
+
+  Not legal advice, and not a substitute for a lawyer's review before you
+  process real users' data at scale.
+-->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — DlíFios</title>
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+
+<style>
+  :root {
+    --ink: #1b211d;
+    --ink-soft: #5d675f;
+    --green: #1a9d54;
+    --line: #e7eae6;
+    --surface-2: #f6f8f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    line-height: 1.65;
+    background: #fff;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 80px; }
+  a { color: var(--green); }
+  .back { display: inline-block; margin-bottom: 32px; font-size: 14px; text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+  h1 { font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.5px; margin: 0 0 8px; }
+  .updated { color: var(--ink-soft); font-size: 14px; margin: 0 0 40px; }
+  h2 {
+    font-size: 20px; margin: 40px 0 12px;
+    padding-top: 24px; border-top: 1px solid var(--line);
+  }
+  p, li { color: #2c332e; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 650; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .box {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px 20px; margin: 24px 0;
+  }
+  .box p:last-child { margin-bottom: 0; }
+  .box p:first-child { margin-top: 0; }
+  @media (max-width: 560px) { table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; } td { border: 0; padding: 4px 0; }
+    tr { border-bottom: 1px solid var(--line); padding: 12px 0; } }
+</style>
+
+<div class="wrap">
+  <a class="back" href="/">← Back to DlíFios</a>
+
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated 26 July 2026</p>
+
+  <p>
+    DlíFios answers questions about EU law. This page explains exactly what we collect,
+    why, who else sees it, and how to get it deleted. It describes what the software
+    actually does — each item below maps to a real field in our database or a real
+    outbound request in our code.
+  </p>
+
+  <h2>1. What we collect</h2>
+
+  <table>
+    <thead>
+      <tr><th>Data</th><th>When</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Email address</b></td>
+        <td>Sign-up</td>
+        <td>It is your login. We send a one-time link to it; there is no password.</td>
+      </tr>
+      <tr>
+        <td><b>Full name</b></td>
+        <td>Sign-up</td>
+        <td>To address you in the app and in emails.</td>
+      </tr>
+      <tr>
+        <td><b>Organisation, company size, sector, phone</b> <em>(all optional)</em></td>
+        <td>Sign-up</td>
+        <td>To tailor the weekly digest to your industry. Leave them blank and the service works identically.</td>
+      </tr>
+      <tr>
+        <td><b>Your questions</b></td>
+        <td>Each time you ask</td>
+        <td>To count usage against your daily limit, and to measure and improve answer quality.</td>
+      </tr>
+      <tr>
+        <td><b>IP address</b></td>
+        <td>Only when signed out</td>
+        <td>To limit anonymous use to 3 questions a day. Held in server memory only, never written to the database, and lost whenever the server restarts.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    We do not use advertising cookies, analytics trackers, or third-party pixels. The only
+    thing stored in your browser is your own login session.
+  </p>
+
+  <h2>2. Who else sees it</h2>
+
+  <table>
+    <thead>
+      <tr><th>Processor</th><th>What they receive</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Supabase</b> — authentication and database</td>
+        <td>Your email, name and the optional profile fields; your questions.</td>
+      </tr>
+      <tr>
+        <td><b>Google (Gemini)</b> — generates the answers</td>
+        <td><b>The text of your question</b>, plus the legal passages we retrieved. Your name, email and account identity are <b>not</b> sent.</td>
+      </tr>
+      <tr>
+        <td><b>Qdrant</b> — vector search</td>
+        <td>Nothing personal. It stores only published EU legal texts.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box">
+    <p>
+      <b>Worth knowing:</b> your question text is sent to Google to produce the answer.
+      Please don't put personal data about yourself or anyone else into a question — describe
+      the situation in general terms instead. That is good practice with any AI assistant,
+      not just this one.
+    </p>
+  </div>
+
+  <p>We do not sell your data, and we do not share it with anyone beyond the processors above.</p>
+
+  <h2>3. Legal basis</h2>
+  <ul>
+    <li><b>Contract</b> (Art. 6(1)(b)) — your account, your questions, and enforcing usage limits. Without these the service cannot function.</li>
+    <li><b>Consent</b> (Art. 6(1)(a)) — the weekly digest email. You can withdraw it at any time.</li>
+    <li><b>Legitimate interests</b> (Art. 6(1)(f)) — the anonymous IP rate limit, to protect the service from abuse and runaway cost.</li>
+  </ul>
+
+  <h2>4. How long we keep it</h2>
+  <ul>
+    <li><b>Account and profile</b> — until you delete your account.</li>
+    <li><b>Questions</b> — until you delete your account.</li>
+    <li><b>IP addresses</b> — in memory only, for at most 24 hours, and cleared on restart.</li>
+  </ul>
+  <p>Deleting your account removes all of the above immediately. There is no soft-delete or hidden archive.</p>
+
+  <h2>5. Your rights</h2>
+  <p>Under the GDPR you have the right to access, correct, delete, port, restrict or object to the processing of your data, and to complain to your national data-protection authority.</p>
+
+  <div class="box">
+    <p>
+      <b>Delete your account right now:</b> sign in, then use <b>Delete account</b> next to your
+      name in the top-right. It erases your profile, your questions and your login in one step,
+      with no waiting period and no email exchange.
+    </p>
+  </div>
+
+  <p>
+    Prefer to ask a human, or want a copy of your data? Email
+    <a href="mailto:ritik135001@gmail.com">ritik135001@gmail.com</a>. We answer within 30 days,
+    as Article 12(3) requires.
+  </p>
+
+  <h2>6. Security</h2>
+  <ul>
+    <li>No passwords exist. Sign-in is by one-time email link, so there is no password to leak.</li>
+    <li>Row Level Security is enforced on every database table — your profile is readable only by you.</li>
+    <li>The usage log is locked so that no browser can read it; only our server can write to it.</li>
+    <li>All connections use TLS.</li>
+  </ul>
+  <p>
+    No system is perfectly secure. If you find a vulnerability, please report it to the address
+    above rather than disclosing it publicly, and we will fix it.
+  </p>
+
+  <h2>7. Not legal advice</h2>
+  <p>
+    DlíFios states what the law says and cites its sources. It does not advise you on what to do
+    in your situation, and using it does not create a lawyer–client relationship. Answers are
+    generated by an AI model from official EU texts and can be incomplete or wrong — always verify
+    against the linked source before relying on anything.
+  </p>
+
+  <h2>8. Changes</h2>
+  <p>
+    If this policy changes we will update the date above. Material changes affecting how we use
+    your data will be emailed to registered users.
+  </p>
+</div>

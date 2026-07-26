@@ -573,10 +573,10 @@
         background: #0c130f;
         color: #cdd6cf;
       }
-      /* Was 4 columns for 4 link groups; now 3 (brand + Product + Sources). */
+      /* brand + Product + Sources + Legal. */
       .footer-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-columns: 1.8fr 1fr 1fr 1fr;
         gap: 30px;
         padding-top: 48px;
         padding-bottom: 32px;
@@ -763,6 +763,27 @@
       .quota-pill.show { display: block; }
       .quota-pill b { color: var(--ink); font-weight: 650; }
 
+      /* Destructive action. Muted until hover so it never competes with the
+         primary CTA, then unmistakably red once you're reaching for it. */
+      .btn-danger { color: #ff9b9b !important; }
+      .btn-danger:hover { background: rgba(220, 38, 38, 0.16) !important; color: #ff6b6b !important; }
+
+      /* The type-to-confirm field inside the delete dialog. */
+      .danger-card { border-top: 3px solid #c62828; }
+      .danger-list { margin: 14px 0 0; padding-left: 20px; font-size: 14px; color: var(--ink-soft); }
+      .danger-list li { margin-bottom: 4px; }
+      .btn-destroy {
+        margin-top: 4px; width: 100%; font: inherit; font-weight: 650; font-size: 15px;
+        padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+        background: #c62828; color: #fff;
+      }
+      .btn-destroy:disabled { opacity: 0.45; cursor: not-allowed; }
+      .btn-cancel {
+        width: 100%; font: inherit; font-weight: 600; font-size: 14.5px; margin-top: 8px;
+        padding: 11px; border: 1px solid var(--line); border-radius: 10px;
+        background: #fff; color: var(--ink); cursor: pointer;
+      }
+
       /* Bibliography links — underlined on hover so they read as citations,
          not as buttons. */
       .src-list a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
@@ -795,6 +816,7 @@
             <div class="acct" id="acctBox" hidden>
               <span class="acct-name" id="acctName"></span>
               <button class="btn btn-ghost" id="signOut">Sign out</button>
+              <button class="btn btn-ghost btn-danger" id="delAcct">Delete account</button>
             </div>
             <a class="btn btn-primary" href="#ask">Try DlíFios</a>
           </div>
@@ -1065,6 +1087,12 @@
             <ul>
               <li><a href="https://eur-lex.europa.eu/" target="_blank" rel="noopener noreferrer">EUR-Lex</a></li>
               <li><a href="https://www.edpb.europa.eu/" target="_blank" rel="noopener noreferrer">EDPB</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="/privacy">Privacy Policy</a></li>
             </ul>
           </div>
         </div>
@@ -1475,6 +1503,41 @@
       </div>
     </div>
 
+    <!-- Account deletion. Separate dialog from sign-in because the two must
+         never be one mis-click apart. Requires typing DELETE: a confirm() is
+         one reflexive Enter away, but nobody types a word by accident. -->
+    <div class="auth-wrap" id="delWrap" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+      <div class="auth-card danger-card">
+        <div class="auth-head">
+          <div>
+            <h3 id="delTitle">Delete your account</h3>
+            <p>This is permanent and takes effect immediately.</p>
+          </div>
+          <button class="auth-x" id="delClose" aria-label="Close">&times;</button>
+        </div>
+
+        <ul class="danger-list">
+          <li>Your profile — name, organisation, sector, phone</li>
+          <li>Every question you have asked</li>
+          <li>Your login, and this session</li>
+        </ul>
+
+        <div class="auth-form">
+          <div class="fld">
+            <label for="delConfirm">Type <b>DELETE</b> to confirm</label>
+            <input id="delConfirm" type="text" autocomplete="off" placeholder="DELETE" />
+          </div>
+          <button class="btn-destroy" id="delGo" disabled>Permanently delete my account</button>
+          <button class="btn-cancel" id="delCancel">Cancel — keep my account</button>
+        </div>
+        <p class="auth-msg" id="delMsg"></p>
+        <p class="auth-fine">
+          This is your GDPR Article 17 right to erasure. No waiting period, no email
+          exchange. See the <a href="/privacy">privacy policy</a>.
+        </p>
+      </div>
+    </div>
+
     <!-- type="module" so we can `import`. Modules are deferred by default, so
          this runs after the classic script above has defined ask(). -->
     <script type="module">
@@ -1607,6 +1670,62 @@
         paint();
         document.getElementById("quotaPill").classList.remove("show");
         showToast("Signed out");
+      });
+
+      // --- Account deletion ---------------------------------------------------
+      const delWrap    = document.getElementById("delWrap");
+      const delConfirm = document.getElementById("delConfirm");
+      const delGo      = document.getElementById("delGo");
+      const delMsg     = document.getElementById("delMsg");
+
+      const closeDel = () => { delWrap.classList.remove("open"); delConfirm.value = ""; delGo.disabled = true; };
+      document.getElementById("delAcct").addEventListener("click", () => {
+        delMsg.className = "auth-msg";
+        delWrap.classList.add("open");
+        delConfirm.focus();
+      });
+      document.getElementById("delClose").addEventListener("click", closeDel);
+      document.getElementById("delCancel").addEventListener("click", closeDel);
+      delWrap.addEventListener("click", (e) => { if (e.target === delWrap) closeDel(); });
+
+      // The button stays disabled until the word matches exactly. Deliberately
+      // case-sensitive — "delete" doesn't count, you have to mean it.
+      delConfirm.addEventListener("input", () => {
+        delGo.disabled = delConfirm.value !== "DELETE";
+      });
+
+      delGo.addEventListener("click", async () => {
+        const token = await window.dlifios.token();
+        if (!token) return;
+        delGo.disabled = true;
+        delGo.textContent = "Deleting…";
+        try {
+          const res = await fetch("/account", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ confirm: "DELETE" }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed");
+
+          // The account is gone server-side; clear the local session so the page
+          // doesn't keep showing a signed-in state backed by a dead user.
+          await supabase.auth.signOut();
+          session = null;
+          paint();
+          closeDel();
+          document.getElementById("quotaPill").classList.remove("show");
+          chatMain.innerHTML =
+            '<p class="ans-q">Account deleted</p>' +
+            '<div class="status">Your profile and ' + data.questionsDeleted +
+            " question(s) have been permanently erased. Thanks for trying DlíFios.</div>";
+          showToast("Account deleted");
+        } catch (err) {
+          delMsg.textContent = err.message;
+          delMsg.className = "auth-msg show err";
+          delGo.disabled = false;
+          delGo.textContent = "Permanently delete my account";
+        }
       });
 
       // --- The bridge to ask() -----------------------------------------------

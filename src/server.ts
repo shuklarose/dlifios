@@ -20,6 +20,7 @@ import { ask } from "./answer.ts";
 import { ingestCelex, ingestGdpr } from "./store.ts";
 import { monitorNewActs } from "./monitor.ts";
 import { buildDigest } from "./digest.ts";
+import { deleteAccount } from "./account.ts";
 import {
   identifyCaller,
   checkQuota,
@@ -77,6 +78,11 @@ app.use("*", async (c, next) => {
 // Resolve the path relative to this file (src/) so cwd doesn't matter.
 const UI_PATH = fileURLToPath(new URL("../public/index.html", import.meta.url));
 app.get("/", (c) => c.html(readFileSync(UI_PATH, "utf8")));
+
+// The privacy policy. A legally required page for a service collecting personal
+// data — and doubly so for one whose subject matter is data-protection law.
+const PRIVACY_PATH = fileURLToPath(new URL("../public/privacy.html", import.meta.url));
+app.get("/privacy", (c) => c.html(readFileSync(PRIVACY_PATH, "utf8")));
 
 // Static assets — logo, globe render, etc. live in public/assets and are served
 // at /assets/*. `root` is relative to the cwd the server starts from, which is
@@ -143,6 +149,38 @@ app.get("/history", async (c) => {
   } catch (err) {
     console.error("/history failed:", err);
     return c.json({ error: "Could not load history" }, 500);
+  }
+});
+
+// Delete the caller's own account and everything we hold about them.
+//
+// Scoped to the token holder — there is no "delete user X" parameter, so this
+// endpoint cannot be pointed at somebody else's account no matter what the
+// client sends. The only id it will ever act on is the one Supabase vouched for.
+//
+// Requires an explicit {"confirm": "DELETE"} in the body. A destructive,
+// irreversible action shouldn't be reachable by a stray fetch or a mis-click,
+// and the UI asks the user to type that word before it sends this.
+app.delete("/account", async (c) => {
+  const caller = await identifyCaller(c.req.header("Authorization"));
+  if (!caller.id) return c.json({ error: "Sign in first" }, 401);
+
+  let body: { confirm?: string } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+  if (body.confirm !== "DELETE") {
+    return c.json({ error: 'Send {"confirm":"DELETE"} to confirm' }, 400);
+  }
+
+  try {
+    const report = await deleteAccount(caller.id);
+    return c.json({ deleted: true, ...report });
+  } catch (err) {
+    console.error("/account delete failed:", err);
+    return c.json({ error: "Could not delete account" }, 500);
   }
 });
 
