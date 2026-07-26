@@ -114,12 +114,13 @@ Audited against a 5-part checklist (Gitleaks / Bearer / ECC production audit) be
 - Server never trusts a client-supplied user id — tokens are verified with `supabaseAdmin.auth.getUser()`.
 - Questions are logged *before* the paid model call, so a failure mid-request can't be used to get free queries.
 - No PII in request-path logs.
+- **Right to erasure** (Art. 17) is self-serve: `DELETE /account` removes the profile, every logged question and the auth user in one step. Scoped to the token holder — it takes no user id, so it cannot be aimed at another account. Deletion order is chosen so no orphan rows survive.
+- A **privacy policy** at `/privacy`, written from the code rather than a template, disclosing that question text is sent to Google.
 
 **Known gaps** — documented rather than hidden:
 - CSP includes `'unsafe-inline'` because page CSS/JS are inline in `index.html`. Fixing this means extracting them to files.
 - The anonymous rate limiter is in-process: it resets on restart and isn't shared across instances. Fine for one server, needs Redis beyond that. It also can't distinguish people behind one NAT gateway — which is part of the argument for signing up.
-- **No account-deletion flow yet.** For a tool that collects personal data and is *about* GDPR, this is the most important outstanding item.
-- No privacy policy page.
+- Session tokens live in `localStorage` (the supabase-js default). Standard practice, but reachable by any script on the page — which is part of why the CSP above matters.
 
 ---
 
@@ -172,6 +173,8 @@ npm run serve     # http://localhost:3000
 | `GET /config` | — | Public browser config (Supabase URL + anon key) |
 | `POST /ask` | optional | Ask a question. Quota depends on whether a token is sent |
 | `GET /history` | user token | The caller's own past questions |
+| `DELETE /account` | user token | Erase the caller's profile, questions and login |
+| `GET /privacy` | — | Privacy policy |
 | `POST /ingest` | `ADMIN_TOKEN` | Ingest an act by CELEX id |
 | `POST /monitor` | `ADMIN_TOKEN` | Discover + ingest newly published acts |
 | `POST /digest` | `ADMIN_TOKEN` | Build the weekly digest |
@@ -224,8 +227,8 @@ No dotenv — Node's built-in `process.loadEnvFile()`. No frontend framework; th
 
 ## Roadmap
 
-- [ ] Account deletion + privacy policy *(GDPR obligations — highest priority)*
-- [ ] Evaluation set with a retrieval accuracy score
+- [x] Account deletion + privacy policy *(GDPR Art. 17)*
+- [ ] Evaluation set with a retrieval accuracy score *(highest priority)*
 - [ ] Weekly digest delivery to registered users
 - [ ] Welcome email via Supabase webhook → n8n
 - [ ] CJEU case law from Curia *(deliberately not claimed as a source until it's real)*
