@@ -121,10 +121,19 @@
       .brand .shield { color: var(--hero-green); width: 26px; height: 26px; }
       .brand-mark { width: 42px; height: 42px; object-fit: contain; flex: none; }
 
+      /* The nav is `justify-content: space-between` with three children, which
+         spreads them brand | links | CTA — fine with five links, but with two
+         they float marooned in the middle of the bar.
+         `margin-right: auto` makes THIS element absorb all the leftover space,
+         so the links sit tight against the brand and the CTA is pushed right.
+         That's the conventional SaaS layout: identity + navigation on the left,
+         action on the right. */
       .nav-links {
         display: flex;
         align-items: center;
-        gap: 30px;
+        gap: 26px;
+        margin-left: 38px;
+        margin-right: auto;
       }
       .nav-links a {
         color: var(--hero-muted);
@@ -554,9 +563,10 @@
         background: #0c130f;
         color: #cdd6cf;
       }
+      /* Was 4 columns for 4 link groups; now 3 (brand + Product + Sources). */
       .footer-grid {
         display: grid;
-        grid-template-columns: 1.6fr 1fr 1fr 1fr;
+        grid-template-columns: 2fr 1fr 1fr;
         gap: 30px;
         padding-top: 48px;
         padding-bottom: 32px;
@@ -1053,39 +1063,35 @@ The Act is phased in from August 2024 and fully applicable by August 2026.</div>
             </div>
             <p class="footer-about">AI-powered legal intelligence for EU law and beyond.</p>
           </div>
+          <!-- Every link here goes somewhere real. The old footer had eleven
+               dead "coming soon" links across Product/Company/Legal — Blog,
+               Careers, Changelog and friends. On a product with no blog and no
+               careers page, those don't read as ambition, they read as an
+               unfinished template. Two honest columns beat four hollow ones. -->
           <div>
             <h4>Product</h4>
             <ul>
+              <li><a href="#ask">Ask DlíFios</a></li>
               <li><a href="#what">Features</a></li>
               <li><a href="#trust">Coverage</a></li>
-              <li><a href="#" data-soon>Pricing</a></li>
-              <li><a href="#" data-soon>Changelog</a></li>
             </ul>
           </div>
           <div>
-            <h4>Company</h4>
+            <h4>Sources</h4>
             <ul>
-              <li><a href="#" data-soon>About</a></li>
-              <li><a href="#" data-soon>Blog</a></li>
-              <li><a href="#" data-soon>Careers</a></li>
-              <li><a href="#" data-soon>Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4>Legal</h4>
-            <ul>
-              <li><a href="#" data-soon>Privacy Policy</a></li>
-              <li><a href="#" data-soon>Terms of Service</a></li>
-              <li><a href="#" data-soon>Cookie Policy</a></li>
+              <li><a href="https://eur-lex.europa.eu/" target="_blank" rel="noopener noreferrer">EUR-Lex</a></li>
+              <li><a href="https://www.edpb.europa.eu/" target="_blank" rel="noopener noreferrer">EDPB</a></li>
             </ul>
           </div>
         </div>
+        <!-- The LinkedIn and GitHub icons pointed at "#" and github.com's
+             homepage. A social icon that goes nowhere is worse than no icon.
+             They come back the day there's a real profile and repo to link. -->
         <div class="footer-bottom pad">
           <span class="copy">© 2026 DlíFios. All rights reserved.</span>
-          <div class="socials">
-            <a href="#" data-soon aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.34 18.34V9.99H5.67v8.35zM7 8.84a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.5v-4.58c0-2.45-1.31-3.59-3.06-3.59a2.64 2.64 0 0 0-2.39 1.31v-1.13h-2.67v8.35h2.67v-4.62c0-1.22.23-2.4 1.74-2.4s1.51 1.39 1.51 2.48v4.54z"/></svg></a>
-            <a href="https://github.com" data-soon aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 0 0 8.84 21.5c.5.08.66-.22.66-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.1-1.47-1.1-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.16.57.67.48A10 10 0 0 0 12 2z"/></svg></a>
-          </div>
+          <span class="copy">
+            Answers are AI-generated from official EU sources and are not legal advice.
+          </span>
         </div>
       </footer>
     </div>
