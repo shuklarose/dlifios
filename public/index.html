@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DlíFios — Know the Law. Stay Ahead.</title>
+    <title>DlíFios - Know the Law. Stay Ahead.</title>
 
     <!-- The browser-tab icon. Same logo as the nav, so the tab is recognisable
          when the user has twenty tabs open. apple-touch-icon is the same file
@@ -128,7 +128,7 @@
       .brand-mark { width: 42px; height: 42px; object-fit: contain; flex: none; }
 
       /* The nav is `justify-content: space-between` with three children, which
-         spreads them brand | links | CTA — fine with five links, but with two
+         spreads them brand | links | CTA - fine with five links, but with two
          they float marooned in the middle of the bar.
          `margin-right: auto` makes THIS element absorb all the leftover space,
          so the links sit tight against the brand and the CTA is pushed right.
@@ -171,7 +171,7 @@
       .btn-primary { background: var(--green); color: #fff; }
       .btn-primary:hover { background: var(--green-strong); }
 
-      /* Hamburger — hidden on desktop, shown on mobile. */
+      /* Hamburger - hidden on desktop, shown on mobile. */
       .hamburger {
         display: none;
         background: transparent;
@@ -343,7 +343,7 @@
       }
 
       /* ============================================================
-         "WHAT IS DLÍFIOS?" — feature grid
+         "WHAT IS DLÍFIOS?" - feature grid
          ============================================================ */
       .section { padding-top: 64px; padding-bottom: 64px; }
       .section-head { text-align: center; max-width: 620px; margin: 0 auto 44px; }
@@ -383,7 +383,7 @@
       .feature p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
 
       /* ============================================================
-         ASK DLÍFIOS — the real, working tool
+         ASK DLÍFIOS - the real, working tool
          ============================================================ */
       .ask-section { background: var(--surface-2); border-top: 1px solid var(--line); }
 
@@ -535,7 +535,7 @@
          TRUST BAND ("Built on trust. Backed by law.")
          ============================================================ */
       /* padding-top was 0, which left the tinted trust card almost touching the
-         tinted ask-section above it — two --surface-2 blocks with only a thin
+         tinted ask-section above it - two --surface-2 blocks with only a thin
          white sliver between, so they read as one broken shape. An explicit top
          gutter separates them and balances the space below. */
       .trust-band-wrap { padding-top: 48px; padding-bottom: 64px; }
@@ -646,7 +646,7 @@
       .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
       /* ============================================================
-         RESPONSIVE  — tablet then phone
+         RESPONSIVE  - tablet then phone
          ============================================================ */
       @media (max-width: 880px) {
         .pad { padding-left: 24px; padding-right: 24px; }
@@ -784,7 +784,7 @@
         background: #fff; color: var(--ink); cursor: pointer;
       }
 
-      /* Bibliography links — underlined on hover so they read as citations,
+      /* Bibliography links - underlined on hover so they read as citations,
          not as buttons. */
       .src-list a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
       .src-list a:hover { color: var(--green-strong); border-bottom-color: var(--green); }
@@ -928,7 +928,7 @@
             </svg>
             EUR-Lex
           </span>
-          <!-- Curia was listed here but the corpus contains no case law at all —
+          <!-- Curia was listed here but the corpus contains no case law at all -
                claiming a source we never query is the kind of thing this product
                exists to catch. It comes back when we actually ingest CJEU
                judgments. EDPB replaces it: genuinely fetched, for the digest. -->
@@ -1016,7 +1016,7 @@
             </button>
             <!-- History is REAL: every question already lands in question_log,
                  so this just reads back what we were storing all along.
-                 Alerts and Bookmarks were removed — nothing behind them. -->
+                 Alerts and Bookmarks were removed - nothing behind them. -->
             <button class="side-item" id="histBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
@@ -1025,7 +1025,7 @@
           </aside>
 
           <!-- Starts empty and honest. It previously showed an invented AI Act
-               answer with real-looking citations that no retrieval produced —
+               answer with real-looking citations that no retrieval produced -
                exactly the hallucination this whole product exists to prevent. -->
           <div class="chat-main" id="chatMain">
             <p class="ans-q">Ask a question to get started</p>
@@ -1070,7 +1070,7 @@
             <p class="footer-about">AI-powered legal intelligence for EU law and beyond.</p>
           </div>
           <!-- Every link here goes somewhere real. The old footer had eleven
-               dead "coming soon" links across Product/Company/Legal — Blog,
+               dead "coming soon" links across Product/Company/Legal - Blog,
                Careers, Changelog and friends. On a product with no blog and no
                careers page, those don't read as ambition, they read as an
                unfinished template. Two honest columns beat four hollow ones. -->
@@ -1146,7 +1146,7 @@
       );
 
       /* =====================================================================
-         2) THE GLOBE — a rotating sphere of dots drawn on <canvas>.
+         2) THE GLOBE - a rotating sphere of dots drawn on <canvas>.
          How it works:
            • Scatter N points evenly on a unit sphere (Fibonacci spiral).
            • Tilt them once so the sphere has a pleasing axis.
@@ -1238,7 +1238,7 @@
       })();
 
       /* =====================================================================
-         3) THE ASK TOOL — the only "real" part. POSTs to /ask and renders the
+         3) THE ASK TOOL - the only "real" part. POSTs to /ask and renders the
          cited answer, replacing the static sample card.
          ===================================================================== */
       const qEl = document.getElementById("q");
@@ -1247,7 +1247,7 @@
       const chipsEl = document.getElementById("chips");
 
       // Example questions. NOTE: the CJEU one mirrors the mockup but our corpus
-      // has no case law yet — it will honestly answer "I don't know". We'll fix
+      // has no case law yet - it will honestly answer "I don't know". We'll fix
       // that when we "plan the missing parts".
       const EXAMPLES = [
         "What are the latest updates to the AI Act?",
@@ -1271,7 +1271,7 @@
       }
 
       function answerCard(question, answer, sources) {
-        // Each source is now { label, act, article, celex, url } — a real
+        // Each source is now { label, act, article, celex, url } - a real
         // bibliography entry linking to the official text on EUR-Lex.
         // target=_blank keeps our page open; rel=noopener is the security
         // companion that stops the opened tab from touching window.opener.
@@ -1300,7 +1300,7 @@
         const left = Math.max(0, data.limit - data.used);
         quotaPill.innerHTML = data.signedIn
           ? "<b>" + left + "</b> of " + data.limit + " questions left today"
-          : "<b>" + left + "</b> of " + data.limit + " free questions left — " +
+          : "<b>" + left + "</b> of " + data.limit + " free questions left - " +
             '<a href="#" data-auth-open>sign up free</a> for 20 a day';
         quotaPill.classList.add("show");
       }
@@ -1312,7 +1312,7 @@
         try {
           // If the visitor is signed in, attach their access token. The server
           // verifies it with Supabase and applies their daily quota. No token =
-          // anonymous, which still works — this is a nudge, not a wall.
+          // anonymous, which still works - this is a nudge, not a wall.
           const headers = { "Content-Type": "application/json" };
           const token = window.dlifios ? await window.dlifios.token() : null;
           if (token) headers.Authorization = "Bearer " + token;
@@ -1361,7 +1361,7 @@
       });
 
       // History: fetch this user's own past questions and list them. Clicking
-      // one re-asks it. Needs the token — the server scopes the query to
+      // one re-asks it. Needs the token - the server scopes the query to
       // whoever that token belongs to, so you can only ever see your own.
       document.getElementById("histBtn").addEventListener("click", async () => {
         const token = window.dlifios ? await window.dlifios.token() : null;
@@ -1460,10 +1460,10 @@
               <label for="af-size">Company size</label>
               <select id="af-size" name="employee_count">
                 <option value="">Select…</option>
-                <option>1–10</option>
-                <option>11–50</option>
-                <option>51–200</option>
-                <option>201–1000</option>
+                <option>1-10</option>
+                <option>11-50</option>
+                <option>51-200</option>
+                <option>201-1000</option>
                 <option>1000+</option>
               </select>
             </div>
@@ -1498,7 +1498,7 @@
         <p class="auth-msg" id="authMsg"></p>
         <p class="auth-fine">
           Signing in gives you <b id="fineLimit">20</b> questions a day. We store your
-          details to personalise your weekly EU-law digest — nothing else.
+          details to personalise your weekly EU-law digest - nothing else.
         </p>
       </div>
     </div>
@@ -1517,7 +1517,7 @@
         </div>
 
         <ul class="danger-list">
-          <li>Your profile — name, organisation, sector, phone</li>
+          <li>Your profile - name, organisation, sector, phone</li>
           <li>Every question you have asked</li>
           <li>Your login, and this session</li>
         </ul>
@@ -1528,7 +1528,7 @@
             <input id="delConfirm" type="text" autocomplete="off" placeholder="DELETE" />
           </div>
           <button class="btn-destroy" id="delGo" disabled>Permanently delete my account</button>
-          <button class="btn-cancel" id="delCancel">Cancel — keep my account</button>
+          <button class="btn-cancel" id="delCancel">Cancel - keep my account</button>
         </div>
         <p class="auth-msg" id="delMsg"></p>
         <p class="auth-fine">
@@ -1559,7 +1559,7 @@
 
       // Event DELEGATION: one listener on the document instead of one per button.
       // This matters because the quota pill injects a "sign up free" link AFTER
-      // this code runs — a listener attached now could never have found it.
+      // this code runs - a listener attached now could never have found it.
       // .closest() walks up from whatever was clicked to the nearest match.
       document.addEventListener("click", (e) => {
         const trigger = e.target.closest("[data-auth-open]");
@@ -1594,7 +1594,7 @@
 
       // --- Session state ------------------------------------------------------
       // One place decides what the nav looks like. onAuthStateChange fires on
-      // load, on login, on logout and on token refresh — so we never hand-sync.
+      // load, on login, on logout and on token refresh - so we never hand-sync.
       let session = null;
 
       function paint() {
@@ -1618,7 +1618,7 @@
             // The magic link leaves #access_token=... in the address bar.
             // Strip it so a copied URL never leaks a live token.
             history.replaceState(null, "", location.pathname + location.search);
-            showToast("Signed in — " + (s.user.email || ""));
+            showToast("Signed in - " + (s.user.email || ""));
           }
         });
         // onAuthStateChange also delivers the restored session, but ask this
@@ -1661,7 +1661,7 @@
         submit.disabled = false;
         submit.textContent = "Email me a sign-in link";
         if (error) return say(error.message, "err");
-        say("Check " + email + " — we sent you a sign-in link. It expires in 1 hour.", "ok");
+        say("Check " + email + " - we sent you a sign-in link. It expires in 1 hour.", "ok");
       });
 
       document.getElementById("signOut").addEventListener("click", async () => {
@@ -1689,7 +1689,7 @@
       delWrap.addEventListener("click", (e) => { if (e.target === delWrap) closeDel(); });
 
       // The button stays disabled until the word matches exactly. Deliberately
-      // case-sensitive — "delete" doesn't count, you have to mean it.
+      // case-sensitive - "delete" doesn't count, you have to mean it.
       delConfirm.addEventListener("input", () => {
         delGo.disabled = delConfirm.value !== "DELETE";
       });

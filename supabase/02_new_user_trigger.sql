@@ -1,14 +1,14 @@
--- 02_new_user_trigger.sql — auto-create a profiles row on signup.
+-- 02_new_user_trigger.sql - auto-create a profiles row on signup.
 -- Run this AFTER schema.sql, in the Supabase SQL Editor.
 --
 -- The problem it solves: Supabase Auth writes to its own private auth.users table
 -- when someone signs up (magic link). Our signup FORM fields (name, org, sector…)
 -- ride along in that row's raw_user_meta_data. We want them copied into our own
--- public.profiles table automatically, the instant the auth user is created —
+-- public.profiles table automatically, the instant the auth user is created -
 -- so the app (and the welcome-email webhook) always has a profile to read.
 --
 -- We do it with a database TRIGGER: "after any insert on auth.users, run this
--- function." The database guarantees it fires — no app code can forget to.
+-- function." The database guarantees it fires - no app code can forget to.
 
 -- ---------------------------------------------------------------------------
 -- The function the trigger runs. `new` is the freshly-inserted auth.users row.
@@ -25,7 +25,7 @@
 -- raw_user_meta_data is JSONB; `->>'key'` reads a text value out of it. The
 -- optional fields are simply NULL if the form didn't send them. full_name is
 -- NOT NULL in our schema, so we coalesce to the email's local part as a safety
--- net — a metadata-less signup then still succeeds instead of erroring.
+-- net - a metadata-less signup then still succeeds instead of erroring.
 -- ---------------------------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger

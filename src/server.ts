@@ -1,19 +1,11 @@
-// server.ts — Day 9: expose the RAG system over HTTP with Hono.
-// Until now ask() and ingestGdpr() only ran from the CLI. This turns them into
-// "doors" other programs can knock on: n8n (Days 10-12) and the UI (Day 13)
-// will POST to these routes instead of importing our code.
-//
-//   POST /ask     { "question": "...", "k"?: number }       -> { answer, sources }
-//   POST /ingest  { "celex"?, "source"?, "reset"? }          -> { stored, celex, source }
-//   POST /monitor { "since"?: "YYYY-MM-DD" }                  -> { since, found, ingested, skipped }
-//   POST /digest  { "since"?: "YYYY-MM-DD" }                  -> { since, subject, body, acts, guidance }
-//   GET  /                                                   -> the chat UI (Day 13)
-//   GET  /health                                             -> health/info
+// HTTP API and UI. Browser routes are session-authenticated; /ingest, /monitor
+// and /digest are machine routes called by n8n and gated by ADMIN_TOKEN.
 
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { readFileSync } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { ask } from "./answer.ts";
@@ -31,26 +23,11 @@ import {
   ANON_LIMIT,
 } from "./quota.ts";
 
-// A Hono app is just a collection of routes. Each handler gets a "context" `c`
-// holding the request and helpers to build the response (c.json, c.req, etc.).
 const app = new Hono();
 
-// Security headers on every response. Each one closes a specific attack:
-//
-//   nosniff          browsers must trust our declared Content-Type instead of
-//                    guessing — stops an uploaded "image" being run as script.
-//   frame-ancestors  nobody can iframe us, which kills clickjacking (an
-//                    invisible DlíFios layered under an attacker's buttons).
-//   referrer-policy  our URLs stop leaking to sites the user clicks through to.
-//   HSTS             after the first visit the browser refuses plain HTTP,
-//                    so a network attacker can't downgrade the connection.
-//   CSP              the big one: scripts may only come from this origin and
-//                    the one CDN we load supabase-js from. If someone ever
-//                    injects a <script src="evil.com">, the browser blocks it.
-//
-// 'unsafe-inline' is present because the page's CSS and JS are inline in
-// index.html. That's a real weakening — the honest fix is moving them to
-// separate files and dropping it, which is a refactor, not a one-liner.
+// CSP keeps 'unsafe-inline' because the page's CSS and JS are inline in
+// index.html. Extracting them to files is the fix; until then this is weaker
+// than it looks.
 app.use("*", async (c, next) => {
   await next();
   c.header("X-Content-Type-Options", "nosniff");
@@ -64,7 +41,7 @@ app.use("*", async (c, next) => {
       "script-src 'self' 'unsafe-inline' https://esm.sh",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
-      // The browser talks directly to Supabase Auth, so it must be allowed.
+      // The browser talks to Supabase Auth directly.
       "connect-src 'self' https://*.supabase.co https://esm.sh",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -73,34 +50,20 @@ app.use("*", async (c, next) => {
   );
 });
 
-// The chat UI (Day 13). Served from the SAME origin as /ask, so the page can
-// fetch("/ask") with no CORS and no hardcoded URL — and it deploys with the API.
-// Resolve the path relative to this file (src/) so cwd doesn't matter.
+// UI is served from the same origin as the API, so there is no CORS surface and
+// no hardcoded API URL in the page. Paths resolve relative to this file so the
+// working directory doesn't matter.
 const UI_PATH = fileURLToPath(new URL("../public/index.html", import.meta.url));
-app.get("/", (c) => c.html(readFileSync(UI_PATH, "utf8")));
-
-// The privacy policy. A legally required page for a service collecting personal
-// data — and doubly so for one whose subject matter is data-protection law.
 const PRIVACY_PATH = fileURLToPath(new URL("../public/privacy.html", import.meta.url));
+
+app.get("/", (c) => c.html(readFileSync(UI_PATH, "utf8")));
 app.get("/privacy", (c) => c.html(readFileSync(PRIVACY_PATH, "utf8")));
-
-// Static assets — logo, globe render, etc. live in public/assets and are served
-// at /assets/*. `root` is relative to the cwd the server starts from, which is
-// the project root when launched via `npm run serve`.
 app.use("/assets/*", serveStatic({ root: "./public" }));
-
-// Health check — handy for "is the server up?" and for n8n to ping.
 app.get("/health", (c) => c.json({ name: "DlíFios API", status: "ok" }));
 
-// Public browser config. The page needs two values to talk to Supabase Auth:
-// the project URL and the ANON key. Both are public BY DESIGN — the anon key
-// only grants what Row Level Security allows, which is why we spent the effort
-// writing RLS policies. The SERVICE ROLE key is never sent here; it stays on the
-// server where it belongs.
-//
-// Why an endpoint instead of hardcoding them in index.html? Config lives in .env
-// in exactly one place, so deploying to a real domain (or a second environment)
-// means changing .env — never editing HTML.
+// The anon key is public by design: it grants only what RLS policies allow. The
+// service-role key, which bypasses RLS, is never sent here. Serving config from
+// .env rather than hardcoding it keeps deploys to a new domain config-only.
 app.get("/config", (c) =>
   c.json({
     supabaseUrl: process.env.SUPABASE_URL ?? "",
@@ -110,35 +73,30 @@ app.get("/config", (c) =>
   }),
 );
 
-// --- Machine-endpoint guard -------------------------------------------------
-// /ingest, /monitor and /digest are called by n8n, never by a browser. They are
-// also the expensive ones: ingest re-embeds the whole corpus (and with
-// reset:true DELETES it first), digest spends Gemini calls. Left open, anyone
-// who learns the URL can drain the API key or destroy the vector store.
-//
-// So they require a shared secret from .env. This is deliberately NOT Supabase
-// auth: the caller is a machine with no user account, and a long random string
-// in n8n's credential store is the right shape for that.
-//
-// Fails CLOSED — if ADMIN_TOKEN isn't configured, the endpoints refuse rather
-// than silently allowing everything. A missing config should never mean "open".
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
+const MAX_QUESTION_LENGTH = 1000;
 
-function adminOk(c: any): boolean {
+// Gate for the machine routes. /ingest re-embeds the corpus and with reset:true
+// drops it first; /digest spends model calls. Unauthenticated, those are a
+// corpus-destruction and billing vector.
+//
+// Fails closed: an unset ADMIN_TOKEN denies rather than allows.
+function adminOk(c: Context): boolean {
   if (!ADMIN_TOKEN) return false;
-  const supplied = (c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  // Compare full length rather than bailing on the first wrong character, so
-  // response time doesn't leak how much of the token an attacker guessed right.
-  if (supplied.length !== ADMIN_TOKEN.length) return false;
-  let diff = 0;
-  for (let i = 0; i < ADMIN_TOKEN.length; i++) diff |= supplied.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
-  return diff === 0;
+
+  const supplied = Buffer.from((c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, ""));
+  const expected = Buffer.from(ADMIN_TOKEN);
+
+  // timingSafeEqual throws on length mismatch, so check that first. Length is
+  // not the secret; the bytes are.
+  if (supplied.length !== expected.length) return false;
+  return timingSafeEqual(supplied, expected);
 }
 
 // A signed-in user's own question history. Requires a valid token: without one
 // there's no user to scope the query to, so we refuse rather than guess.
 // 401 = "you aren't authenticated", which is different from 403 "you are, but
-// you're not allowed" — the browser uses that difference to prompt a login.
+// you're not allowed" - the browser uses that difference to prompt a login.
 app.get("/history", async (c) => {
   const caller = await identifyCaller(c.req.header("Authorization"));
   if (!caller.id) return c.json({ error: "Sign in to see your history" }, 401);
@@ -152,15 +110,9 @@ app.get("/history", async (c) => {
   }
 });
 
-// Delete the caller's own account and everything we hold about them.
-//
-// Scoped to the token holder — there is no "delete user X" parameter, so this
-// endpoint cannot be pointed at somebody else's account no matter what the
-// client sends. The only id it will ever act on is the one Supabase vouched for.
-//
-// Requires an explicit {"confirm": "DELETE"} in the body. A destructive,
-// irreversible action shouldn't be reachable by a stray fetch or a mis-click,
-// and the UI asks the user to type that word before it sends this.
+// GDPR Art. 17 erasure. Scoped to the token holder: no user id parameter exists,
+// so this cannot be aimed at another account. The confirm field keeps an
+// irreversible action out of reach of a stray fetch.
 app.delete("/account", async (c) => {
   const caller = await identifyCaller(c.req.header("Authorization"));
   if (!caller.id) return c.json({ error: "Sign in first" }, 401);
@@ -184,10 +136,7 @@ app.delete("/account", async (c) => {
   }
 });
 
-// The star: ask a question, get a grounded, article-cited answer.
 app.post("/ask", async (c) => {
-  // Read the JSON body the client sent. Wrapped in try/catch because a
-  // malformed body would otherwise throw before we can return a clean error.
   let body: { question?: string; k?: number };
   try {
     body = await c.req.json();
@@ -195,39 +144,48 @@ app.post("/ask", async (c) => {
     return c.json({ error: "Body must be valid JSON" }, 400);
   }
 
-  // Validate input — never trust the caller. 400 = "your request was bad".
+  // Server-side validation is the only validation that counts; the browser's is
+  // a courtesy to honest users. Anyone can curl this endpoint.
   if (!body.question || typeof body.question !== "string") {
     return c.json({ error: "Field 'question' (string) is required" }, 400);
   }
 
-  // --- The quota gate (product phase 1) -------------------------------------
-  // Identify the caller from their Supabase login token (anonymous if none),
-  // then refuse BEFORE spending a paid Gemini call if a signed-up user is over
-  // their daily cap. 429 = "Too Many Requests". Anonymous callers pass through
-  // for now (the public UI is anonymous-only until login ships); their IP-based
-  // cap is the next step.
-  //
-  // NOTE: anonymous /ask currently has no server-side spend cap — closing that
-  // (IP-based) is tracked as the follow-up before this is publicly deployed.
-  // Who is this, by IP? Behind a proxy (nginx, Cloudflare) the real client IP
-  // arrives in x-forwarded-for as "client, proxy1, proxy2" — the first entry is
-  // the one we want. Falls back to the socket address for direct connections.
+  const question = body.question.trim();
+  if (!question) {
+    return c.json({ error: "Field 'question' cannot be empty" }, 400);
+  }
+
+  // Both caps are billing controls. Unbounded, a single request could carry
+  // megabytes into the prompt, and k=10000 would retrieve 10000 chunks and
+  // include every one. We reject rather than clamp so a buggy caller finds out.
+  if (question.length > MAX_QUESTION_LENGTH) {
+    return c.json({ error: `Question is too long (max ${MAX_QUESTION_LENGTH} characters)` }, 400);
+  }
+
+  let k = 5;
+  if (body.k !== undefined) {
+    if (typeof body.k !== "number" || !Number.isInteger(body.k) || body.k < 1 || body.k > 20) {
+      return c.json({ error: "Field 'k' must be an integer between 1 and 20" }, 400);
+    }
+    k = body.k;
+  }
+
+  // Behind a proxy the client IP is the first entry in x-forwarded-for; fall
+  // back to the socket address for direct connections.
   const ip =
     c.req.header("x-forwarded-for")?.split(",")[0].trim() ||
     c.req.header("x-real-ip") ||
-    c.env?.incoming?.socket?.remoteAddress ||
+    (c.env as any)?.incoming?.socket?.remoteAddress ||
     "";
 
   let caller;
-  let used = 0; // questions this caller has spent today, AFTER counting this one
+  let used = 0;
   let limit = DAILY_LIMIT;
   try {
     caller = await identifyCaller(c.req.header("Authorization"));
     const quota = await checkQuota(caller, ip);
     limit = quota.limit;
     if (!quota.allowed) {
-      // Two different walls, two different messages. An anonymous visitor who
-      // hits the wall should be told signing up fixes it — that's the funnel.
       return c.json(
         {
           error: caller.id
@@ -240,24 +198,22 @@ app.post("/ask", async (c) => {
         429,
       );
     }
-    // Count it BEFORE the LLM call: the moment we're about to spend money, the
-    // question counts against quota — even if the answer step later fails.
-    await logQuestion(caller, body.question);
+    // Counted before the model call: once we are about to spend, it counts,
+    // even if generation later fails.
+    await logQuestion(caller, question);
     if (!caller.id && ip) recordAnonHit(ip);
-    used = quota.used + 1; // +1 for the one we just counted
+    used = quota.used + 1;
   } catch (err) {
     console.error("/ask quota check failed:", err);
     return c.json({ error: "Could not verify request quota" }, 500);
   }
 
-  // Do the work. If retrieval or the LLM fails, return 500 rather than crashing
-  // the whole server.
   try {
-    const { answer, sources } = await ask(body.question, body.k ?? 5);
-    // Echo the quota back so the UI can show "3 of 20 used today" without a
-    // second round-trip. signedIn tells the page whether that number is real.
+    const { answer, sources } = await ask(question, k);
+    // Quota echoed back so the UI can render remaining questions without a
+    // second round-trip.
     return c.json({
-      question: body.question,
+      question,
       answer,
       sources,
       signedIn: Boolean(caller.id),
@@ -270,13 +226,12 @@ app.post("/ask", async (c) => {
   }
 });
 
-// Ingest an act into Qdrant. Day 11's n8n daily monitor POSTs { celex, source }
-// for each new act SPARQL detects, ADDING it to the corpus. With no celex it
-// falls back to a clean GDPR rebuild (the base corpus / model-swap path).
+// Adds one act to the corpus. Called per act by the monitor. With no celex it
+// rebuilds the GDPR base corpus, which is the path used after a model swap.
 app.post("/ingest", async (c) => {
   if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
 
-  // Body is optional here, so a parse failure just means "no body" -> {}.
+  // Body is optional here.
   let body: { celex?: string; source?: string; reset?: boolean } = {};
   try {
     body = await c.req.json();
@@ -291,7 +246,6 @@ app.post("/ingest", async (c) => {
       });
       return c.json({ stored, celex: body.celex, source: body.source ?? body.celex });
     }
-    // No celex -> rebuild the base GDPR corpus.
     const stored = await ingestGdpr();
     return c.json({ stored, celex: "32016R0679", source: "GDPR" });
   } catch (err) {
@@ -300,9 +254,8 @@ app.post("/ingest", async (c) => {
   }
 });
 
-// The daily watch loop: detect new data-protection acts and ingest them.
-// n8n's Cron workflow POSTs here once a day. `since` defaults to 7 days back —
-// a daily run only needs a small window, with hasCelex() catching overlaps.
+// Discovers newly published data-protection acts and ingests them. Run daily by
+// n8n. The 7-day default window overlaps deliberately; hasCelex() dedupes.
 app.post("/monitor", async (c) => {
   if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
 
@@ -325,9 +278,8 @@ app.post("/monitor", async (c) => {
   }
 });
 
-// The weekly digest: summarise the week's new acts + EDPB guidance into an
-// email-ready {subject, body}. n8n's weekly Schedule POSTs here, then hands
-// subject/body to a Gmail node. `since` defaults to 7 days back.
+// Summarises the week's new acts and EDPB guidance into {subject, body} for the
+// weekly email. Run by n8n, which passes the result to a Gmail node.
 app.post("/digest", async (c) => {
   if (!adminOk(c)) return c.json({ error: "Unauthorized" }, 401);
 

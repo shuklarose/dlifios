@@ -1,10 +1,8 @@
-// store.ts — Day 6: embed an act's chunks and store them in Qdrant.
-// This completes the ingestion half: fetch -> chunk -> embed -> STORE.
+// The end of the ingestion path: fetch -> chunk -> embed -> store.
 //
-// Day 9 refactor: work moved into exported functions so the Hono server can
-// trigger ingestion. Day 11 generalisation: ingestCelex(celex, source) ADDS any
-// act to the shared collection; the daily monitor calls it for new acts. The
-// `reset` flag drops-and-rebuilds (used for full reindexes / embedding swaps).
+// ingestCelex(celex, source) adds any act to the shared collection and is what
+// the monitor calls for each newly discovered act. The reset flag drops and
+// rebuilds instead, which is the path for a full reindex or an embedding swap.
 
 import { QdrantVectorStore } from "@langchain/qdrant";
 import { QdrantClient } from "@qdrant/js-client-rest";
@@ -28,7 +26,7 @@ function qdrant(): QdrantClient {
 }
 
 // hasCelex() filters on this field, and Qdrant REQUIRES a payload index to
-// filter — without it the filter errors. We (re)create the index after every
+// filter - without it the filter errors. We (re)create the index after every
 // upsert, because a reset drops the collection and its indexes with it.
 async function ensureCelexIndex(client: QdrantClient): Promise<void> {
   try {
@@ -37,12 +35,12 @@ async function ensureCelexIndex(client: QdrantClient): Promise<void> {
       field_schema: "keyword",
     });
   } catch {
-    // Already exists — Qdrant rejects a duplicate index; that's fine.
+    // Already exists - Qdrant rejects a duplicate index; that's fine.
   }
 }
 
 // Embed one act (by CELEX) and store its chunks in the shared collection.
-//   - reset:false (default) ADDS the act to whatever's already there — this is
+//   - reset:false (default) ADDS the act to whatever's already there - this is
 //     what the daily monitor wants when a NEW act appears.
 //   - reset:true DROPS the collection first, for a clean full rebuild (e.g.
 //     after swapping the embedding model, where vector size changes).
@@ -66,7 +64,7 @@ export async function ingestCelex(
   const chunks = await chunkCelex(celex, source);
 
   // LangChain stores "Documents": pageContent (the text to embed) + metadata
-  // (rides along, returned with search hits — this is what powers citations).
+  // (rides along, returned with search hits - this is what powers citations).
   const documents = chunks.map(
     (c) =>
       new Document({
@@ -76,9 +74,9 @@ export async function ingestCelex(
   );
 
   // Not every act has article markup (decisions, corrigenda, etc.). With no
-  // chunks there's nothing to embed — bail cleanly so the monitor can skip it.
+  // chunks there's nothing to embed - bail cleanly so the monitor can skip it.
   if (documents.length === 0) {
-    console.log(`No article structure in ${source} (${celex}) — nothing stored.`);
+    console.log(`No article structure in ${source} (${celex}) - nothing stored.`);
     return 0;
   }
 
@@ -86,14 +84,14 @@ export async function ingestCelex(
 
   // fromDocuments creates the collection (size 768, cosine) if missing, embeds
   // every document via LocalEmbeddings, and upserts. If the collection already
-  // exists it ADDS to it — that's how new acts join the corpus.
+  // exists it ADDS to it - that's how new acts join the corpus.
   await QdrantVectorStore.fromDocuments(documents, new LocalEmbeddings(), {
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_API_KEY,
     collectionName: COLLECTION,
   });
 
-  // The collection now exists for sure — make metadata.celex filterable so
+  // The collection now exists for sure - make metadata.celex filterable so
   // hasCelex() works (idempotent dedup for the daily monitor).
   await ensureCelexIndex(client);
 
@@ -106,7 +104,7 @@ export function ingestGdpr(): Promise<number> {
   return ingestCelex(CELEX.GDPR, "GDPR", { reset: true });
 }
 
-// Is this act already in the corpus? The monitor uses this to stay idempotent —
+// Is this act already in the corpus? The monitor uses this to stay idempotent -
 // it skips acts it has already ingested instead of creating duplicate chunks.
 // We ask Qdrant for a single point whose metadata.celex matches; one hit = yes.
 export async function hasCelex(celex: string): Promise<boolean> {

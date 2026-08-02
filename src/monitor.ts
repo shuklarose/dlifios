@@ -1,9 +1,6 @@
-// monitor.ts — Day 11: the daily "watch" loop that makes the system feed itself.
-// It ties together two pieces we already built:
-//   findNewActs(since)  (Day 3) — SPARQL: "what data-protection acts are new?"
-//   ingestCelex(celex)  (Day 11) — fetch -> chunk -> embed -> store one act
-// plus hasCelex() so it's idempotent (never re-ingests an act it already has).
-// The Hono /monitor route calls monitorNewActs(); n8n's daily cron hits that.
+// The daily watch loop: discover newly published data-protection acts via
+// SPARQL and ingest them. hasCelex() makes it idempotent, so overlapping windows
+// and repeated runs are safe. Driven by n8n through POST /monitor.
 
 import { fileURLToPath } from "node:url";
 
@@ -61,8 +58,8 @@ async function demo() {
 
   console.log(`Found ${result.found} act(s) tagged data-protection.`);
   console.log(`Ingested ${result.ingested.length}, skipped ${result.skipped.length}.\n`);
-  for (const a of result.ingested) console.log(`  + ${a.celex} (${a.chunks} chunks) — ${a.title}`);
-  for (const s of result.skipped) console.log(`  · skip ${s.celex} [${s.reason}] — ${s.title}`);
+  for (const a of result.ingested) console.log(`  + ${a.celex} (${a.chunks} chunks) - ${a.title}`);
+  for (const s of result.skipped) console.log(`  · skip ${s.celex} [${s.reason}] - ${s.title}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

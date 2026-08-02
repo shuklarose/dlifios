@@ -1,6 +1,6 @@
-// sources/eurlex.ts — EUR-Lex machine routes.
-// Today: SPARQL change detection — "what data-protection acts are new since DATE?"
-// Day 11: the daily n8n cron will call exactly this function.
+// sources/eurlex.ts - EUR-Lex machine routes.
+// Today: SPARQL change detection - "what data-protection acts are new since DATE?"
+// Called by the daily monitor run.
 
 import {
   SPARQL_ENDPOINT,
@@ -27,7 +27,7 @@ export async function fetchCelexHtml(celex: string): Promise<string> {
   return response.text();
 }
 
-// The simplified shape we hand back to callers — they never see raw SPARQL JSON.
+// The simplified shape we hand back to callers - they never see raw SPARQL JSON.
 export interface NewAct {
   celex: string;
   title: string;
@@ -65,7 +65,7 @@ export async function findNewActs(sinceDate: string): Promise<NewAct[]> {
   });
 
   if (!response.ok) {
-    throw new Error(`SPARQL failed: ${response.status} — ${(await response.text()).slice(0, 300)}`);
+    throw new Error(`SPARQL failed: ${response.status} - ${(await response.text()).slice(0, 300)}`);
   }
 
   const json = await response.json();

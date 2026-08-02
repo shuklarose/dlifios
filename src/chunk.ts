@@ -1,12 +1,12 @@
-// chunk.ts — Day 4: split an EU act into article-sized, citation-ready chunks.
-// Strategy: the EU already marks every article with <div ... id="art_N">,
-// so we split on THEIR boundaries instead of guessing. Long articles get
-// sub-split, but every piece keeps its article number as metadata.
+// Splits an EU act into article-sized, citation-ready chunks.
 //
-// Day 11 generalisation: the splitter was always generic (the "oj-"/"eli-"
-// classes are the EU's standard Official Journal markup, shared across acts),
-// so chunkGdpr() became a thin wrapper over chunkCelex(celex, source). The
-// daily monitor uses chunkCelex() to chunk whatever new act SPARQL detects.
+// The EU marks every article with <div id="art_N">, so we split on their
+// boundaries rather than by character count. Long articles are sub-split, and
+// every piece keeps its article number in metadata, which is what makes the
+// citation a property of the chunk rather than something the model reconstructs.
+//
+// The markup ("oj-"/"eli-" classes) is the EU's standard Official Journal format
+// and is shared across acts, so one splitter handles any CELEX id.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -14,18 +14,18 @@ import { fileURLToPath } from "node:url";
 import { CELEX } from "./config.ts";
 import { fetchCelexHtml } from "./sources/eurlex.ts";
 
-// The shape every chunk has from here to Qdrant. The metadata is what
-// makes Day-8 citations possible ("per Article 6(1)(a) GDPR").
+// The shape every chunk keeps from here to Qdrant. The metadata is what makes a
+// precise citation possible later.
 export interface Chunk {
   id: string; // e.g. "GDPR_art6_p0", or "GDPR_art4_def7" for a definition
-  text: string; // what gets embedded on Day 5
+  text: string;
   metadata: {
     source: string;
     celex: string;
     article: number;
     title: string; // e.g. "Lawfulness of processing"
     part: number; // 0, 1, 2... within one article
-    definition?: number; // set only for definitions articles — the N in "Article 4(7)"
+    definition?: number; // set only for definitions articles - the N in "Article 4(7)"
   };
 }
 
@@ -73,7 +73,7 @@ function splitArticles(html: string): ArticleSection[] {
   const markers = [...html.matchAll(/<div class="eli-subdivision" id="art_(\d+)">/g)];
 
   // Signatures/annexes start at oj-final. If an act lacks that marker,
-  // indexOf returns -1 — fall back to the end of the document so the last
+  // indexOf returns -1 - fall back to the end of the document so the last
   // article isn't truncated.
   const finalBlockRaw = html.indexOf('<div class="oj-final">');
   const finalBlock = finalBlockRaw === -1 ? html.length : finalBlockRaw;
@@ -119,7 +119,7 @@ function splitIntoPieces(text: string, maxChars: number): string[] {
 // character count is actively harmful. Measured on GDPR Article 4: the size-based
 // splitter produced one chunk holding 'pseudonymisation', 'filing system',
 // 'controller' AND 'processor' together, so that chunk's embedding landed at the
-// CENTROID of four unrelated concepts — close to none of them. The observable
+// CENTROID of four unrelated concepts - close to none of them. The observable
 // result: "What is a data controller?" could not retrieve the chunk that defines
 // a controller. It didn't even rank top-20 when the question quoted the
 // definition almost word for word.
@@ -127,7 +127,7 @@ function splitIntoPieces(text: string, maxChars: number): string[] {
 // The EU's markup hands us a better boundary, one level below the id="art_N" we
 // already split on: each definition starts with its number alone on a line
 // ("(7)"), followed by the text. The counts confirm it's structural, not a guess
-// — GDPR Art 4: 26 such lines for 26 definitions; AI Act Art 3: 68 for 68.
+// - GDPR Art 4: 26 such lines for 26 definitions; AI Act Art 3: 68 for 68.
 //
 // Returns null when this ISN'T a definitions list, so the caller falls back to
 // the normal size-based splitter.
@@ -178,8 +178,8 @@ export async function chunkCelex(celex: string, source: string = celex): Promise
           id: `${source}_art${art.article}_def${def.num}`,
           // Self-describing: this chunk is embedded and retrieved ALONE, so it has
           // to carry its own citation. "Article 4(7)" is also precisely how a
-          // lawyer cites a definition — the sub-number is the whole point.
-          text: `Article ${art.article}(${def.num}) — ${art.title}:\n${def.text}`,
+          // lawyer cites a definition - the sub-number is the whole point.
+          text: `Article ${art.article}(${def.num}) - ${art.title}:\n${def.text}`,
           metadata: {
             source,
             celex,
@@ -196,10 +196,10 @@ export async function chunkCelex(celex: string, source: string = celex): Promise
     const pieces = splitIntoPieces(art.body, MAX_CHUNK_CHARS);
 
     pieces.forEach((piece, part) => {
-      // Continuation pieces lose the heading in the split — re-attach it so
+      // Continuation pieces lose the heading in the split - re-attach it so
       // every chunk is self-describing when embedded alone.
       const text =
-        part === 0 ? piece : `Article ${art.article} — ${art.title} (continued):\n${piece}`;
+        part === 0 ? piece : `Article ${art.article} - ${art.title} (continued):\n${piece}`;
 
       chunks.push({
         id: `${source}_art${art.article}_p${part}`,
@@ -218,7 +218,7 @@ export async function chunkCelex(celex: string, source: string = celex): Promise
   return chunks;
 }
 
-// The GDPR is just one act with a friendly name — chunkCelex does the work.
+// The GDPR is just one act with a friendly name - chunkCelex does the work.
 export function chunkGdpr(): Promise<Chunk[]> {
   return chunkCelex(CELEX.GDPR, "GDPR");
 }
@@ -233,7 +233,7 @@ async function demo() {
 
   console.log(`Articles found: ${new Set(chunks.map((c) => c.metadata.article)).size}`);
   console.log(`Chunks produced: ${chunks.length}`);
-  console.log(`Chunk size — min: ${Math.min(...sizes)}, avg: ${avg}, max: ${Math.max(...sizes)}`);
+  console.log(`Chunk size - min: ${Math.min(...sizes)}, avg: ${avg}, max: ${Math.max(...sizes)}`);
 
   const sample = chunks.find((c) => c.id === "GDPR_art6_p0")!;
   console.log(`\n--- sample: ${sample.id} (${sample.metadata.title}) ---`);

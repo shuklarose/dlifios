@@ -1,5 +1,5 @@
-// sources/edpb.ts — EDPB guidance feed (the soft-law layer).
-// RSS is just XML saying "here are my newest posts" — fetch it, parse it, flatten it.
+// sources/edpb.ts - EDPB guidance feed (the soft-law layer).
+// RSS is just XML saying "here are my newest posts" - fetch it, parse it, flatten it.
 
 import { XMLParser } from "fast-xml-parser";
 import { EDPB_RSS_URL, USER_AGENT } from "../config.ts";

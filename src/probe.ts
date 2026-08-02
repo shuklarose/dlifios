@@ -1,6 +1,5 @@
-// probe.ts — Day 3: prove the data source works.
-// Fetches the full text of the GDPR live from the EU's Cellar service
-// and prints evidence: HTTP status, content type, size, and a text sample.
+// Connectivity check for the three upstream EU sources. Run before debugging a
+// pipeline failure, to establish whether the problem is ours or theirs.
 
 import { CELLAR_BASE, CELEX, ACCEPT_HTML, USER_AGENT } from "./config.ts";
 import { findNewActs } from "./sources/eurlex.ts";
@@ -25,7 +24,7 @@ console.log("Status:", response.status, response.statusText);
 console.log("Content-Type:", response.headers.get("content-type"));
 
 if (!response.ok) {
-  console.error("Request failed — body starts with:");
+  console.error("Request failed - body starts with:");
   console.error((await response.text()).slice(0, 500));
   process.exit(1);
 }
@@ -33,13 +32,13 @@ if (!response.ok) {
 const text = await response.text();
 
 console.log("Characters received:", text.length.toLocaleString());
-console.log("--- sample (chars 5000–6000) ---");
+console.log("--- sample (chars 5000-6000) ---");
 console.log(text.slice(5000, 6000));
 
 // ============ Probe 2: SPARQL change detection ============
 
-// "Since 180 days ago" — EU data-protection acts arrive in bursts with quiet
-// months between (we verified: nothing published April–June 2026), so the probe
+// "Since 180 days ago" - EU data-protection acts arrive in bursts with quiet
+// months between (we verified: nothing published April-June 2026), so the probe
 // looks back far enough to always have something to show.
 const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -49,7 +48,7 @@ const acts = await findNewActs(since);
 
 console.log(`Found ${acts.length} act(s):`);
 for (const act of acts) {
-  console.log(`- [${act.date}] ${act.celex} — ${act.title.slice(0, 90)}`);
+  console.log(`- [${act.date}] ${act.celex} - ${act.title.slice(0, 90)}`);
 }
 
 // ============ Probe 3: EDPB RSS feed ============

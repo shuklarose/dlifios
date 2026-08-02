@@ -1,5 +1,5 @@
-// retrieve.ts — Day 7: turn a question into a vector and find the nearest chunks.
-// This is the first half of the QUERY side: embed question -> search Qdrant.
+// Embeds a question with the same model used for the corpus and returns the
+// nearest chunks. The query half of the pipeline; answer.ts consumes the result.
 
 import { QdrantVectorStore } from "@langchain/qdrant";
 import { fileURLToPath } from "node:url";
@@ -25,7 +25,7 @@ function getStore() {
 }
 
 // Top-k nearest chunks to a question, each paired with its similarity score.
-// Day 8 reuses this to feed the LLM.
+// answer.ts feeds the result to the model.
 export async function search(question: string, k = 4) {
   const store = await getStore();
   return store.similaritySearchWithScore(question, k);
@@ -42,7 +42,7 @@ async function demo() {
   for (const [doc, score] of results) {
     const m = doc.metadata;
     const preview = doc.pageContent.slice(0, 110).replace(/\n/g, " ");
-    console.log(`[score ${score.toFixed(3)}]  Article ${m.article} — ${m.title}`);
+    console.log(`[score ${score.toFixed(3)}]  Article ${m.article} - ${m.title}`);
     console.log(`  ${preview}...\n`);
   }
 }

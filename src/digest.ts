@@ -1,8 +1,6 @@
-// digest.ts — Day 12: the weekly "what changed" summary, ready to email.
-// This is the 4th product behaviour (Watch/Ingest/Answer/DIGEST). It gathers
-// the week's changes from the two sources we built on Day 3 — new EU acts
-// (SPARQL) and new EDPB guidance (RSS) — and has Gemini write a readable email.
-// n8n's weekly Schedule calls /digest, then pipes {subject, body} to Gmail.
+// The weekly "what changed" summary. Gathers new acts (SPARQL) and new EDPB
+// guidance (RSS), then has the model write them up as {subject, body}. Driven by
+// n8n, which pipes the result to a Gmail node.
 
 import { fileURLToPath } from "node:url";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
@@ -30,7 +28,7 @@ export interface Digest {
 }
 
 export async function buildDigest(since: string): Promise<Digest> {
-  // Pull both sources at once — they're independent network calls.
+  // Pull both sources at once - they're independent network calls.
   const [acts, allGuidance] = await Promise.all([findNewActs(since), fetchEdpbItems()]);
 
   // findNewActs already filters by date; the EDPB RSS doesn't, so keep only
@@ -42,11 +40,11 @@ export async function buildDigest(since: string): Promise<Digest> {
     return Number.isNaN(t) ? true : t >= sinceTime;
   });
 
-  // Quiet week — don't waste an LLM call, just say so.
+  // Quiet week - don't waste an LLM call, just say so.
   if (acts.length === 0 && guidance.length === 0) {
     return {
       since,
-      subject: "DlíFios weekly digest — no new developments",
+      subject: "DlíFios weekly digest - no new developments",
       body: `No new EU data-protection acts or EDPB guidance since ${since}.`,
       acts,
       guidance,
@@ -56,14 +54,14 @@ export async function buildDigest(since: string): Promise<Digest> {
   const actsList = acts.map((a) => `- [${a.celex}, ${a.date}] ${a.title}`).join("\n") || "(none)";
   const guidanceList = guidance.map((g) => `- [${g.date}] ${g.title}`).join("\n") || "(none)";
 
-  // Strict prompt: summarise ONLY the listed items, no invention — same
+  // Strict prompt: summarise ONLY the listed items, no invention - same
   // anti-hallucination discipline as the /ask chain.
   const prompt = `You are writing a weekly email digest for data-protection professionals,
 covering new EU developments since ${since}. Summarise the items below into a concise,
 scannable plain-text email with two sections: "New EU acts" and "EDPB guidance".
-Use ONLY the items listed — do not invent developments or details. If a section has no
+Use ONLY the items listed - do not invent developments or details. If a section has no
 items, write "Nothing new this week." under it.
-Output ONLY the email body — do NOT include a "Subject:" line (the subject is set
+Output ONLY the email body - do NOT include a "Subject:" line (the subject is set
 separately). A short opening line is fine, but no email headers.
 
 NEW EU ACTS:
@@ -78,7 +76,7 @@ Write the email body now:`;
 
   return {
     since,
-    subject: `DlíFios weekly digest — ${acts.length} new act(s), ${guidance.length} guidance item(s)`,
+    subject: `DlíFios weekly digest - ${acts.length} new act(s), ${guidance.length} guidance item(s)`,
     body: response.content as string,
     acts,
     guidance,

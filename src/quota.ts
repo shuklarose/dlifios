@@ -1,32 +1,18 @@
-// quota.ts — "who is asking, and are they allowed to?" (product phase 1)
+// Caller identification and spend limits for /ask.
 //
-// Two server-side jobs, both wired into /ask:
-//   1. identify the caller from their Supabase session token (or treat as anonymous)
-//   2. enforce a per-user daily cap BEFORE we spend a paid Gemini call, and log
-//      every question to question_log (the wallet guard + Day-14 eval dataset).
-//
-// Why this lives on the SERVER: the browser's "2 free questions" popup is a
-// conversion nudge and is bypassable (incognito wipes localStorage). Only a check
-// the client CANNOT skip protects the Gemini bill. This module is that check.
+// These run server-side because a client-side limit is a suggestion: incognito
+// clears localStorage. Only a check the caller cannot skip protects the bill.
 
 import { supabaseAdmin } from "./supabase.ts";
 
-// Signed-up users get this many questions per rolling 24h. Generous for genuine
-// use, but a hard ceiling so a bug or a bad actor can't run the bill away.
-// One number, one place to change it.
+// Per rolling 24h, per account.
 export const DAILY_LIMIT = 20;
 
-// Anonymous visitors get a much smaller taste before we ask them to sign up.
-// This is the conversion lever AND the wallet guard: without it, anyone could
-// hammer /ask forever and every question costs us a Gemini call.
+// Per rolling 24h, per IP. Env-overridable because local development shares one
+// IP between the browser and any curl testing.
 //
-// Overridable via .env because the cap is per-IP, and during local development
-// EVERYTHING shares one IP — a curl test from the terminal spends the same
-// budget as the browser. Set ANON_LIMIT=100 in .env while demoing.
-//
-// Known limitation of per-IP limiting generally: an office behind a single NAT
-// gateway shares one budget, so ten colleagues get three questions between them.
-// Signed-in users are counted per account, which is why signup is the real fix.
+// Per-IP limiting cannot tell people apart, only network locations: an office
+// behind one NAT gateway shares a single budget. Accounts are the real fix.
 export const ANON_LIMIT = Number(process.env.ANON_LIMIT ?? 3);
 
 export interface Caller {
@@ -34,12 +20,9 @@ export interface Caller {
   email: string | null;
 }
 
-// Turn an "Authorization: Bearer <token>" header into a verified user.
-// The token is the JWT access-token the browser holds after a magic-link login.
-// getUser() hands it to Supabase Auth, which checks the signature + expiry and
-// returns the user. We NEVER trust a user id the client sends us directly — we
-// only trust one Supabase itself vouches for. A missing/expired/forged token
-// simply falls through to anonymous.
+// Verifies the bearer token with Supabase and returns who it belongs to. A user
+// id supplied by the client is never trusted; only one Supabase vouches for.
+// Missing, expired or forged tokens fall through to anonymous.
 export async function identifyCaller(authHeader?: string): Promise<Caller> {
   const token = authHeader?.replace(/^Bearer\s+/i, "");
   if (!token) return { id: null, email: null };
@@ -49,8 +32,6 @@ export async function identifyCaller(authHeader?: string): Promise<Caller> {
   return { id: data.user.id, email: data.user.email ?? null };
 }
 
-// How many questions has this user asked in the last 24h? Uses the same
-// count-only "head" trick as the db:check — we want the number, not the rows.
 async function usedInLast24h(userId: string): Promise<number> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count, error } = await supabaseAdmin
@@ -68,42 +49,33 @@ export interface QuotaResult {
   limit: number;
 }
 
-// --- Anonymous rate limiting (in-memory) ------------------------------------
-// Signed-up users are counted in Postgres because we need that history for the
-// Day-14 eval set. Anonymous hits don't deserve a database round-trip, so we
-// keep them in a plain Map: IP address -> the timestamps of its recent asks.
+// Anonymous hits are tracked in memory rather than Postgres: no round-trip, and
+// nothing worth persisting. IP -> timestamps of recent requests.
 //
-// Honest trade-off: this lives in the server's memory, so it resets on restart
-// and wouldn't be shared across multiple server instances. For a single box
-// that's fine, and it's a real cap where before there was none. If we ever run
-// more than one instance, this moves to Redis or the question_log table.
+// This resets on restart and is not shared across instances, so it holds only
+// for a single server. Multiple instances would need Redis.
 const anonHits = new Map<string, number[]>();
 const ANON_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function anonUsed(ip: string): number {
   const cutoff = Date.now() - ANON_WINDOW_MS;
-  // Drop anything older than the window, then keep what's left.
   const recent = (anonHits.get(ip) ?? []).filter((t) => t > cutoff);
+  // Dropping empty entries keeps the Map from growing without bound.
   if (recent.length) anonHits.set(ip, recent);
-  else anonHits.delete(ip); // don't let the Map grow forever with dead IPs
+  else anonHits.delete(ip);
   return recent.length;
 }
 
-// Called only when we actually let an anonymous request through.
 export function recordAnonHit(ip: string): void {
   const recent = anonHits.get(ip) ?? [];
   recent.push(Date.now());
   anonHits.set(ip, recent);
 }
 
-// The gate. Two paths:
-//   signed in  -> counted in Postgres, DAILY_LIMIT per rolling 24h
-//   anonymous  -> counted in memory by IP, ANON_LIMIT per rolling 24h
-// Either way the caller cannot skip it, because it runs on the server.
+// Signed in: counted in Postgres. Anonymous: counted in memory by IP.
 export async function checkQuota(caller: Caller, ip?: string): Promise<QuotaResult> {
   if (!caller.id) {
-    // No IP means we can't identify them at all — fail closed to one question
-    // rather than handing out an unlimited free pass.
+    // No IP means no way to count them, so deny rather than grant a free pass.
     if (!ip) return { allowed: false, used: ANON_LIMIT, limit: ANON_LIMIT };
     const used = anonUsed(ip);
     return { allowed: used < ANON_LIMIT, used, limit: ANON_LIMIT };
@@ -112,12 +84,8 @@ export async function checkQuota(caller: Caller, ip?: string): Promise<QuotaResu
   return { allowed: used < DAILY_LIMIT, used, limit: DAILY_LIMIT };
 }
 
-// A signed-in user's recent questions, newest first.
-//
-// We've been writing every question to question_log since the quota gate
-// shipped — this just reads it back, which is why "History" costs one query
-// rather than a new feature. Anonymous callers get nothing: their rows have
-// user_id = null and belong to no one in particular.
+// Recent questions for one user, newest first. Anonymous rows have a null
+// user_id and belong to nobody, so they are never returned.
 export async function recentQuestions(userId: string, limit = 20): Promise<
   { question: string; created_at: string }[]
 > {
@@ -131,8 +99,7 @@ export async function recentQuestions(userId: string, limit = 20): Promise<
   return data ?? [];
 }
 
-// Record the question. user_id is null for anonymous — the schema allows it, so
-// we still capture anonymous questions for the eval dataset.
+// user_id is null for anonymous callers, which the schema allows.
 export async function logQuestion(caller: Caller, question: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from("question_log")

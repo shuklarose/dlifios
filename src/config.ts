@@ -1,49 +1,32 @@
-// config.ts — every endpoint and constant in one place.
-// Rule: no other file hardcodes a URL. If the EU moves an endpoint, we change one line here.
+// Every external endpoint and tunable constant. No other file hardcodes a URL.
 
-// ---- Identity ----
-// EU servers reject anonymous requests, so every fetch sends this header.
-export const USER_AGENT = "DlifiosBot/0.1 (learning project; roseshukla222@gmail.com)";
+// EU publication servers reject requests without a User-Agent.
+export const USER_AGENT = "DlifiosBot/1.0 (+https://github.com/roseshukla; roseshukla222@gmail.com)";
 
-// ---- Cellar: full-text document store ----
-// Pattern: http://publications.europa.eu/resource/celex/{CELEX}
-// The format you get back is decided by the Accept header (content negotiation),
-// not by the URL.
+// Cellar serves full document text. The response format is chosen by the Accept
+// header, not the URL: http://publications.europa.eu/resource/celex/{CELEX}
 export const CELLAR_BASE = "http://publications.europa.eu/resource/celex/";
+export const ACCEPT_HTML = "application/xhtml+xml";
+export const ACCEPT_FORMEX = "application/xml;notice=branch";
 
-// Accept headers for the two formats we care about:
-export const ACCEPT_HTML = "application/xhtml+xml"; // human-shaped full text
-export const ACCEPT_FORMEX = "application/xml;notice=branch"; // article-structured XML
-
-// ---- SPARQL: the "what's new?" endpoint ----
+// SPARQL answers "what was published recently".
 export const SPARQL_ENDPOINT = "http://publications.europa.eu/webapi/rdf/sparql";
 
-// EuroVoc concept id for "data protection" — used to filter new acts to our domain.
+// EuroVoc concept id for "data protection", used to filter new acts to our domain.
 export const EUROVOC_DATA_PROTECTION = "2191";
 
-// ---- EDPB: soft-law guidance feed ----
 export const EDPB_RSS_URL = "https://www.edpb.europa.eu/rss.xml";
 
-// ---- Known documents (CELEX ids) ----
 export const CELEX = {
   GDPR: "32016R0679",
-  AI_ACT: "32024R1689", // stretch corpus, not ingested until the loop works
+  AI_ACT: "32024R1689",
 };
 
-// ---- LLM ----
-// The generation model, in ONE place for the same reason as the endpoints above.
-//
-// Why 2.5-flash and not 3.5-flash: 3.5-flash's free tier is badly oversubscribed
-// — it answers 503 "high demand" on roughly 3 of every 4 calls. LangChain retries
-// 503s with exponential backoff, so those turn into >180s hangs rather than clean
-// failures. 2.5-flash answers the same prompts in ~1.2s on the same key.
-// If this model is ever deprecated, the API returns 404 "no longer available to
-// new users" — swap this line, not answer.ts and digest.ts.
+// 2.5-flash rather than 3.5-flash: on the free tier 3.5-flash returns 503 "high
+// demand" for most calls, and LangChain's exponential backoff turns those into
+// multi-minute hangs instead of clean failures.
 export const GEMINI_MODEL = "gemini-2.5-flash";
 
-// ---- Vector store ----
-// ONE shared collection holds the whole data-protection corpus (GDPR + any act
-// the monitor ingests). Each chunk carries its source/celex/article in metadata,
-// so cross-act questions search everything at once. store.ts + retrieve.ts
-// import this so the name lives in exactly one place.
+// One collection holds every act. Chunks carry source/celex/article in metadata,
+// so a single query searches the whole corpus.
 export const COLLECTION = "eu_law";

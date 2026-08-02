@@ -1,12 +1,10 @@
-// embed.ts — Day 5: turn text into 768-dim "meaning vectors" with a local model.
-// Same model embeds chunks (Day 6) AND questions (Day 7) — that shared space
-// is the whole trick of RAG: nearness = relevance.
+// Text to 768-dim vectors, using a model that runs locally rather than a paid
+// embedding API. The same model embeds both stored chunks and incoming
+// questions; that shared space is what makes nearness mean relevance.
 //
-// Day 14 quality fix: upgraded from all-MiniLM-L6-v2 (384-dim) to
-// all-mpnet-base-v2 (768-dim). MiniLM ranked a procedural Article 6 chunk above
-// the chunk that actually lists the lawful bases (vocabulary overlap beat
-// meaning). mpnet's richer 768-dim space fixes that ranking. Bigger/slower, but
-// for a legal tool, retrieval quality wins.
+// all-mpnet-base-v2 replaced all-MiniLM-L6-v2 (384-dim) after MiniLM ranked a
+// procedural Article 6 chunk above the one listing the lawful bases: vocabulary
+// overlap was beating meaning. mpnet is slower, and correct more often.
 
 import { pipeline } from "@huggingface/transformers";
 import { Embeddings } from "@langchain/core/embeddings";
@@ -14,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const MODEL = "Xenova/all-mpnet-base-v2";
 
-// Building the pipeline loads the model (~420 MB) — slow, and we only want it
+// Building the pipeline loads the model (~420 MB) - slow, and we only want it
 // ONCE no matter how many times embed() is called. This "lazy singleton" stores
 // the in-flight promise the first time, then hands the same one back forever.
 let extractorPromise: Promise<any> | null = null;
@@ -33,17 +31,16 @@ export async function embed(text: string): Promise<number[]> {
   return Array.from(output.data as Float32Array);
 }
 
-// Many texts in one call — more efficient than looping embed() (Day 6 uses this).
+// Batched: one call for many texts, rather than looping embed().
 export async function embedMany(texts: string[]): Promise<number[][]> {
   const extractor = await getExtractor();
   const output = await extractor(texts, { pooling: "mean", normalize: true });
   return output.tolist();
 }
 
-// Adapter: make our local embedder speak LangChain's "Embeddings" language.
-// LangChain calls embedDocuments() for stored texts and embedQuery() for searches.
-// Shared by store.ts (Day 6) and retrieve.ts (Day 7) — same model both ways,
-// which is what puts chunks and questions in the same space.
+// Adapter so LangChain can drive the local embedder: embedDocuments() for stored
+// texts, embedQuery() for searches. Both go through the same model, which is
+// what puts chunks and questions in a comparable space.
 export class LocalEmbeddings extends Embeddings {
   constructor() {
     super({});
@@ -67,14 +64,14 @@ function similarity(a: number[], b: number[]): number {
 async function demo() {
   const sentences = [
     "The data subject must give consent to the processing.", // A
-    "A user has to agree before their information is used.", // B — A's meaning, almost no shared words
-    "The fine can be up to 20 million euros.", // C — unrelated topic
+    "A user has to agree before their information is used.", // B - A's meaning, almost no shared words
+    "The fine can be up to 20 million euros.", // C - unrelated topic
   ];
 
   const vectors = await embedMany(sentences);
 
   console.log("Vector length:", vectors[0].length, "(expected 768)");
-  console.log("\nSimilarity — higher means closer in meaning:");
+  console.log("\nSimilarity - higher means closer in meaning:");
   console.log("  A vs B (same idea, different words):", similarity(vectors[0], vectors[1]).toFixed(3));
   console.log("  A vs C (unrelated):                  ", similarity(vectors[0], vectors[2]).toFixed(3));
 }
