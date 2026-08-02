@@ -1,6 +1,6 @@
 # DlíFios
 
-**Know the Law. Stay Ahead.**
+**Know the Law. Cite the Source.**
 
 A retrieval-augmented question-answering system for EU data-protection law. Ask a question in plain English, get an answer grounded in the actual legal text - with every claim cited to a specific article and linked to the official source on EUR-Lex.
 
