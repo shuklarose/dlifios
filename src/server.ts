@@ -25,10 +25,37 @@ import {
 
 const app = new Hono();
 
-// CSP keeps 'unsafe-inline' because the page's CSS and JS are inline in
-// index.html. Extracting them to files is the fix; until then this is weaker
-// than it looks.
+// The UI can be served from this process (one origin, no CORS) or hosted
+// separately, in which case the browser sends cross-origin requests here and
+// needs an explicit allow.
+//
+// An allowlist rather than "*": these routes carry an Authorization header, and
+// a wildcard origin would let any site on the internet make authenticated calls
+// with a user's token. Empty by default, so the same-origin setup stays closed.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use("*", async (c, next) => {
+  const origin = c.req.header("Origin");
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin);
+
+  if (allowed) {
+    c.header("Access-Control-Allow-Origin", origin);
+    // Tells caches the response varies by Origin, so one origin's response is
+    // never replayed to another.
+    c.header("Vary", "Origin");
+    c.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    c.header("Access-Control-Max-Age", "86400");
+  }
+
+  // Preflight: answer before the route runs, and only for allowed origins.
+  if (c.req.method === "OPTIONS") {
+    return c.body(null, allowed ? 204 : 403);
+  }
+
   await next();
   c.header("X-Content-Type-Options", "nosniff");
   c.header("X-Frame-Options", "DENY");

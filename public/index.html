@@ -10,9 +10,34 @@
          under the name iOS looks for when a page is saved to the home screen. -->
     <link rel="icon" type="image/png" href="/assets/logo.png" />
     <link rel="apple-touch-icon" href="/assets/logo.png" />
+
+    <!-- Where the API lives. Empty means same origin, which is the case when the
+         Node server serves this page. Set it to the backend's URL (no trailing
+         slash) when the frontend is hosted separately, e.g. Vercel + Coolify.
+         That origin must also appear in the backend's ALLOWED_ORIGINS. -->
+    <meta name="dlifios-api-base" content="" />
     <meta
       name="description"
-      content="DlíFios is an AI-powered legal intelligence assistant for EU data-protection law. Cited, trustworthy answers from official EU sources."
+      content="Grounded answers on EU data-protection law. Every claim cited to an article of the GDPR or the AI Act and linked to the official text on EUR-Lex."
+    />
+
+    <!-- Open Graph and Twitter cards, so a shared link renders as a preview card
+         rather than a bare URL. og:image needs an absolute URL, which a relative
+         path cannot provide, so it is filled in at deploy time with the real
+         domain. Left empty it is simply ignored. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DlíFios" />
+    <meta property="og:title" content="DlíFios - Know the Law. Cite the Source." />
+    <meta
+      property="og:description"
+      content="Grounded answers on EU data-protection law. Every claim cited to an article and linked to the official text. When the law does not cover it, it says so."
+    />
+    <meta property="og:image" content="" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DlíFios - Know the Law. Cite the Source." />
+    <meta
+      name="twitter:description"
+      content="Grounded answers on EU data-protection law, cited to the article and linked to the official text."
     />
 
     <!-- Fonts: Lora (serif display, for the logo + headlines) and Inter (sans, body).
@@ -784,6 +809,23 @@
         background: #fff; color: var(--ink); cursor: pointer;
       }
 
+      /* The retrieved passage, revealed under a citation. */
+      .src-excerpt { margin-top: 6px; }
+      .src-excerpt summary {
+        cursor: pointer; font-size: 12.5px; color: var(--green-strong);
+        list-style: none; display: inline-block; padding: 2px 0;
+      }
+      .src-excerpt summary::-webkit-details-marker { display: none; }
+      .src-excerpt summary::before { content: "+ "; font-weight: 700; }
+      .src-excerpt[open] summary::before { content: "- "; }
+      .src-excerpt summary:hover { text-decoration: underline; }
+      .src-excerpt blockquote {
+        margin: 8px 0 4px; padding: 10px 14px;
+        border-left: 3px solid var(--green);
+        background: var(--surface-2); border-radius: 0 8px 8px 0;
+        font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
+      }
+
       /* Bibliography links - underlined on hover so they read as citations,
          not as buttons. */
       .src-list a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
@@ -839,12 +881,16 @@
 
         <div class="hero-grid pad" id="top">
           <div class="hero-copy">
-            <span class="pill"><span class="dot"></span> EU Law Watcher. Always Current.</span>
+            <!-- Scope stated up front. The corpus is EU data-protection law, so
+                 the copy says that rather than "EU law and beyond". -->
+            <span class="pill"><span class="dot"></span> GDPR &amp; the EU AI Act</span>
 
-            <h1>Know the Law.<span class="ahead">Stay Ahead.</span></h1>
+            <h1>Know the Law.<span class="ahead">Cite the Source.</span></h1>
 
             <p class="hero-sub">
-              DlíFios is your AI-powered legal intelligence assistant for EU law and beyond.
+              Grounded answers on EU data-protection law. Every claim is cited to an
+              article and linked to the official text, and when the law does not cover
+              your question, DlíFios says so instead of guessing.
             </p>
 
             <ul class="checks">
@@ -887,7 +933,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </span>
-              <div><div class="fc-title">New Regulation</div><div class="fc-sub">Published today</div></div>
+              <div><div class="fc-title">GDPR</div><div class="fc-sub">Regulation (EU) 2016/679</div></div>
             </div>
 
             <div class="float-card fc-2">
@@ -895,7 +941,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="m2 16 3-8 3 8c-2 1.5-4 1.5-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
               </span>
-              <div><div class="fc-title">CJEU Judgment</div><div class="fc-sub">Case C-123/24</div></div>
+              <div><div class="fc-title">EU AI Act</div><div class="fc-sub">Regulation (EU) 2024/1689</div></div>
             </div>
 
             <div class="float-card fc-3">
@@ -903,7 +949,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
               </span>
-              <div><div class="fc-title">Directive Update</div><div class="fc-sub">In Official Journal</div></div>
+              <div><div class="fc-title">Commission Decision</div><div class="fc-sub">(EU) 2026/713</div></div>
             </div>
           </div>
         </div>
@@ -928,21 +974,15 @@
             </svg>
             EUR-Lex
           </span>
-          <!-- Curia was listed here but the corpus contains no case law at all -
-               claiming a source we never query is the kind of thing this product
-               exists to catch. It comes back when we actually ingest CJEU
-               judgments. EDPB replaces it: genuinely fetched, for the digest. -->
-          <span class="logo">
-            <svg class="lmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-              stroke-dasharray="3 3" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
-            EUR-Lex SPARQL API
-          </span>
+          <!-- Curia was listed here, but the corpus holds no case law: claiming a
+               source we never query is the failure this product exists to catch.
+               It returns when CJEU judgments are actually ingested. -->
           <span class="logo">
             <svg class="lmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 1 9 9v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 9-9z"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
             EDPB
           </span>
-          <span class="logo"><span class="oj-badge">OJ</span> EU Official Journal</span>
+          <span class="logo"><span class="oj-badge">OJ</span> Official Journal</span>
         </div>
         </div>
       </section>
@@ -953,34 +993,42 @@
           <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
           <h2>What is DlíFios?</h2>
-          <p>DlíFios watches legal developments across the EU and turns complexity into clarity.
-            Ask questions. Get answers. With citations you can trust.</p>
+          <p>A question-answering system for EU data-protection law that is built so it
+            cannot answer from memory. Every response is assembled from the legal text
+            it retrieved, and cited back to it.</p>
         </div>
 
+        <!-- These describe mechanisms that exist in the code. The previous set
+             advertised real-time judgment monitoring, which the system does not
+             do and the corpus cannot support. -->
         <div class="features">
           <article class="feature">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
-            <h3>Legal Intelligence</h3>
-            <p>We monitor legislation, judgments, and official publications in real time.</p>
+              stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+            <h3>Grounded in official text</h3>
+            <p>Answers are built only from passages retrieved out of the acts themselves,
+              fetched from the EU's own publication service.</p>
           </article>
           <article class="feature">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
-            <h3>AI-Powered Answers</h3>
-            <p>Get clear, concise answers with sources from trusted EU institutions.</p>
+              stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.8 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.8-1.7"/></svg></div>
+            <h3>Cited to the article</h3>
+            <p>Each claim names the act and article it came from, linked to the official
+              text on EUR-Lex so you can check it yourself.</p>
           </article>
           <article class="feature">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
-            <h3>Always Up-to-Date</h3>
-            <p>Stay ahead with real-time alerts on legal changes that matter.</p>
+              stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+            <h3>Refuses when it cannot cite</h3>
+            <p>If the retrieved law does not answer the question, it says so. No invented
+              article numbers, and no citations under a non-answer.</p>
           </article>
           <article class="feature">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-            <h3>For Professionals</h3>
-            <p>Designed for lawyers, researchers, policymakers, and businesses.</p>
+              stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></div>
+            <h3>Grows on its own</h3>
+            <p>A daily job queries the EU's SPARQL endpoint for newly published
+              data-protection acts and ingests them without anyone intervening.</p>
           </article>
         </div>
       </section>
@@ -994,8 +1042,11 @@
         </div>
 
         <div class="ask-bar">
+          <!-- A placeholder is not a label: it disappears on focus and screen
+               readers may not announce it. aria-label persists. -->
           <input id="q" type="text" autocomplete="off"
-            placeholder="Ask a question about EU law..." />
+            aria-label="Ask a question about EU data-protection law"
+            placeholder="Ask a question about GDPR or the AI Act..." />
           <button class="send-btn" id="go" aria-label="Send">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -1238,21 +1289,28 @@
       })();
 
       /* =====================================================================
-         3) THE ASK TOOL - the only "real" part. POSTs to /ask and renders the
-         cited answer, replacing the static sample card.
+         3) THE ASK TOOL. POSTs to /ask and renders the cited answer.
          ===================================================================== */
       const qEl = document.getElementById("q");
       const goEl = document.getElementById("go");
       const chatMain = document.getElementById("chatMain");
       const chipsEl = document.getElementById("chips");
 
-      // Example questions. NOTE: the CJEU one mirrors the mockup but our corpus
-      // has no case law yet - it will honestly answer "I don't know". We'll fix
-      // that when we "plan the missing parts".
+      // Empty base means same origin. Set the meta tag when the API is hosted
+      // separately from this page.
+      const API_BASE = (
+        document.querySelector('meta[name="dlifios-api-base"]')?.content || ""
+      ).replace(/\/$/, "");
+      const api = (path) => API_BASE + path;
+
+      // Every example has to be answerable from the corpus. The previous three
+      // asked for case law and for what "changed recently", and the system
+      // correctly refused all of them, so the first click a visitor made hit a
+      // shrug. These are questions GDPR and the AI Act actually answer.
       const EXAMPLES = [
-        "What are the latest updates to the AI Act?",
-        "Summarize CJEU case C-123/24",
-        "What changed in the GDPR recently?",
+        "What are the lawful bases for processing personal data?",
+        "When is a data protection impact assessment required?",
+        "What are the transparency obligations for high-risk AI systems?",
       ];
 
       // Safe render: escape HTML first, then turn **bold** + bullet dashes into markup.
@@ -1271,17 +1329,25 @@
       }
 
       function answerCard(question, answer, sources) {
-        // Each source is now { label, act, article, celex, url } - a real
-        // bibliography entry linking to the official text on EUR-Lex.
-        // target=_blank keeps our page open; rel=noopener is the security
-        // companion that stops the opened tab from touching window.opener.
+        // Each citation carries the passage it came from, behind a <details>
+        // disclosure. The claim and the evidence for it sit together, so a
+        // reader can check the answer without leaving the page. Native
+        // <details> gets keyboard and screen-reader behaviour for free.
+        //
+        // rel=noopener stops the opened tab reaching back through window.opener.
         const items = (sources || [])
-          .map(
-            (s) =>
-              '<li><a href="' + s.url + '" target="_blank" rel="noopener noreferrer">' +
+          .map((s) => {
+            const link =
+              '<a href="' + s.url + '" target="_blank" rel="noopener noreferrer">' +
               render(s.label) +
-              '</a> <span class="src-tag">EUR-Lex</span></li>',
-          )
+              '</a> <span class="src-tag">EUR-Lex</span>';
+            if (!s.excerpt) return "<li>" + link + "</li>";
+            return (
+              "<li>" + link +
+              '<details class="src-excerpt"><summary>Show the text</summary>' +
+              "<blockquote>" + render(s.excerpt) + "</blockquote></details></li>"
+            );
+          })
           .join("");
         chatMain.innerHTML =
           '<p class="ans-q">' + render(question) + "</p>" +
@@ -1317,7 +1383,7 @@
           const token = window.dlifios ? await window.dlifios.token() : null;
           if (token) headers.Authorization = "Bearer " + token;
 
-          const res = await fetch("/ask", {
+          const res = await fetch(api("/ask"), {
             method: "POST",
             headers,
             body: JSON.stringify({ question }),
@@ -1374,7 +1440,7 @@
         }
         chatMain.innerHTML = '<p class="ans-q">History</p><div class="status">Loading…</div>';
         try {
-          const res = await fetch("/history", { headers: { Authorization: "Bearer " + token } });
+          const res = await fetch(api("/history"), { headers: { Authorization: "Bearer " + token } });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Failed");
           if (!data.questions.length) {
@@ -1578,7 +1644,7 @@
       // filtered by the Row Level Security policies in schema.sql.
       let supabase = null;
       try {
-        const cfg = await fetch("/config").then((r) => r.json());
+        const cfg = await fetch(api("/config")).then((r) => r.json());
         document.getElementById("fineLimit").textContent = cfg.dailyLimit ?? 20;
         if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error("Supabase not configured");
         supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
@@ -1700,7 +1766,7 @@
         delGo.disabled = true;
         delGo.textContent = "Deleting…";
         try {
-          const res = await fetch("/account", {
+          const res = await fetch(api("/account"), {
             method: "DELETE",
             headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
             body: JSON.stringify({ confirm: "DELETE" }),

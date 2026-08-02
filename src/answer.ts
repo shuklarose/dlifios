@@ -33,12 +33,29 @@ export interface Source {
   article: string;
   celex: string;
   url: string;
+  // The retrieved text itself, so a reader can check the answer against the
+  // passage without leaving the page. Truncated: a chunk can run to 1500
+  // characters and the full act is one click away on EUR-Lex.
+  excerpt: string;
+}
+
+const EXCERPT_CHARS = 600;
+
+// Cut on a sentence boundary where there is one nearby, so the excerpt does not
+// end mid-word.
+function excerpt(text: string): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= EXCERPT_CHARS) return clean;
+
+  const cut = clean.slice(0, EXCERPT_CHARS);
+  const lastStop = cut.lastIndexOf(". ");
+  return (lastStop > EXCERPT_CHARS * 0.6 ? cut.slice(0, lastStop + 1) : cut) + "...";
 }
 
 // CELEX is the EU's permanent document id, and EUR-Lex exposes a stable
 // permalink built from it, so every citation resolves to the official text
 // without storing any URLs.
-function toSource(m: Record<string, any>): Source {
+function toSource(m: Record<string, any>, text: string): Source {
   const sub = m.definition ? `(${m.definition})` : "";
   return {
     label: cite(m),
@@ -48,6 +65,7 @@ function toSource(m: Record<string, any>): Source {
     url: `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=${encodeURIComponent(
       `CELEX:${m.celex}`,
     )}`,
+    excerpt: excerpt(text),
   };
 }
 
@@ -103,7 +121,7 @@ export async function ask(question: string, k = 5) {
   // Two chunks from one article are a single citation.
   const byLabel = new Map<string, Source>();
   for (const [doc] of hits) {
-    const s = toSource(doc.metadata);
+    const s = toSource(doc.metadata, doc.pageContent);
     if (!byLabel.has(s.label)) byLabel.set(s.label, s);
   }
 

@@ -82,7 +82,7 @@ Three independent mechanisms, because prompt instructions alone are not a guaran
 
 2. **Citation filtering** (`src/answer.ts`) - retrieval always returns *k* passages, even for nonsense input. Sources are filtered to only those articles the answer actually references, matched with a word boundary so *Article 6* doesn't match *Article 65*. A refusal therefore shows no sources. Without this, "hi" produced an "I don't know" decorated with three authoritative-looking EU citations.
 
-3. **Linked citations** - every source resolves to a real EUR-Lex permalink built from its CELEX number, so a reader can verify the claim against the primary text rather than trusting the model.
+3. **Linked citations, with the passage attached** - every source resolves to a real EUR-Lex permalink built from its CELEX number, and carries the retrieved text itself. The UI puts that behind a disclosure under each citation, so the claim and the evidence for it sit together and a reader can check one against the other without leaving the page.
 
 ---
 
@@ -203,7 +203,8 @@ curl -X POST localhost:3000/ask \
       "act": "GDPR",
       "article": "6",
       "celex": "32016R0679",
-      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679"
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679",
+      "excerpt": "Article 6 Lawfulness of processing 1. Processing shall be lawful only if..."
     }
   ],
   "signedIn": true,
@@ -216,25 +217,42 @@ curl -X POST localhost:3000/ask \
 
 ## Deployment
 
-Containerised, and deployed on [Coolify](https://coolify.io). Point Coolify at
-the repo, set the environment variables from `.env.example`, expose port 3000.
-The healthcheck at `/health` gates traffic to a new container.
+The API runs as a container on [Coolify](https://coolify.io); the UI can be
+served either by that same container or separately as a static page.
 
-Add the live domain to Supabase under **Authentication -> URL Configuration**,
-both as Site URL and in Redirect URLs, or the magic link will bounce.
+**Backend (Coolify).** Point it at the repo, set the variables from
+`.env.example`, expose port 3000. The `/health` healthcheck gates traffic to a
+new container.
 
-**Why not serverless.** This does not fit Vercel or Lambda, for three reasons
-worth stating because they are properties of the app rather than preferences:
+**Frontend (optional split).** `public/index.html` is a single self-contained
+file and can be hosted anywhere static, Vercel included. Two settings connect
+the halves:
 
-1. The anonymous rate limiter holds counters in process memory. Serverless gives
-   each invocation a fresh instance, so every caller would look new and the cap
-   would silently stop working.
-2. The embedding model is a large download held in memory. Cold starts would
-   either re-download it or time out.
+| Where | Setting |
+|---|---|
+| `public/index.html` | `<meta name="dlifios-api-base" content="https://api.example.com">` |
+| Backend env | `ALLOWED_ORIGINS=https://your-frontend.vercel.app` |
+
+CORS is an allowlist, not `*`. These routes carry an `Authorization` header, and
+a wildcard origin would let any site make authenticated calls with a user's
+token. Unset, it stays closed, which is the correct default for the single-origin
+setup.
+
+Either way, add the live domain to Supabase under **Authentication -> URL
+Configuration**, as Site URL and in Redirect URLs, or magic links will bounce.
+
+**Why the API needs a persistent container.** Three properties of the app rather
+than preferences:
+
+1. The anonymous rate limiter holds counters in process memory. A serverless
+   runtime gives each invocation a fresh instance, so every caller looks new and
+   the cap silently stops working.
+2. The embedding model is a large download held in memory; cold starts would
+   re-download it or time out.
 3. Ingestion runs for minutes, past a typical function timeout.
 
-A persistent container solves all three. Points 1 and 2 are also the argument
-for a single instance: scaling out needs Redis-backed limiting first.
+Points 1 and 2 are also the argument for a single instance: scaling out needs
+Redis-backed rate limiting first.
 
 ## Stack
 
