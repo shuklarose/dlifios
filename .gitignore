@@ -1,21 +1,24 @@
-# Dependencies — reinstalled from package.json, never committed
+# Reinstalled from package-lock.json
 node_modules/
 
-# Secrets — real keys live here, must never reach GitHub
+# Real keys
 .env
+.env.local
 
-# Cached / downloaded data — re-fetched at runtime
+# Cached act HTML, re-fetched from Cellar on demand
 data/
 
-# Hugging Face model cache (Day 5 — ~90 MB, downloaded on demand)
+# Embedding model weights, downloaded on first use
 .cache/
 
-# OS / editor noise
+# OS and editor noise
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 
-# Claude Code local settings (machine-specific)
-.claude/settings.local.json
+# Local tool settings
+.claude/
 
-# Security checklist reference (not part of the app)
+# Reference material, not part of the application
 *.pdf

@@ -99,6 +99,29 @@ export async function recentQuestions(userId: string, limit = 20): Promise<
   return data ?? [];
 }
 
+// Everyone who opted in to the weekly digest. The n8n schedule reads this to
+// address the send, so an unsubscribe takes effect on the next run with no
+// separate list to keep in sync.
+export async function digestRecipients(): Promise<{ email: string; full_name: string }[]> {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("email, full_name")
+    .eq("digest_opt_in", true);
+
+  if (error) {
+    // 42703 is Postgres "undefined column", which means 03_digest_consent.sql
+    // has not been applied yet. Code can reach a server before its migration
+    // does, and that should not take the digest down: no column means nobody
+    // has consented, so an empty list is the correct answer either way.
+    if (error.code === "42703") {
+      console.warn("digestRecipients: digest_opt_in column missing, run 03_digest_consent.sql");
+      return [];
+    }
+    throw error;
+  }
+  return data ?? [];
+}
+
 // user_id is null for anonymous callers, which the schema allows.
 export async function logQuestion(caller: Caller, question: string): Promise<void> {
   const { error } = await supabaseAdmin

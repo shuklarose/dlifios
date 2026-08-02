@@ -19,6 +19,7 @@ import {
   logQuestion,
   recordAnonHit,
   recentQuestions,
+  digestRecipients,
   DAILY_LIMIT,
   ANON_LIMIT,
 } from "./quota.ts";
@@ -321,8 +322,10 @@ app.post("/digest", async (c) => {
     body.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   try {
-    const digest = await buildDigest(since);
-    return c.json(digest);
+    // Recipients travel with the digest so n8n needs one call, and the list is
+    // read fresh each run: an unsubscribe takes effect on the next send.
+    const [digest, recipients] = await Promise.all([buildDigest(since), digestRecipients()]);
+    return c.json({ ...digest, recipients });
   } catch (err) {
     console.error("/digest failed:", err);
     return c.json({ error: "Digest generation failed" }, 500);

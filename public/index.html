@@ -559,38 +559,56 @@
       /* ============================================================
          TRUST BAND ("Built on trust. Backed by law.")
          ============================================================ */
-      /* padding-top was 0, which left the tinted trust card almost touching the
-         tinted ask-section above it - two --surface-2 blocks with only a thin
-         white sliver between, so they read as one broken shape. An explicit top
-         gutter separates them and balances the space below. */
-      .trust-band-wrap { padding-top: 48px; padding-bottom: 64px; }
-      .trust-band {
-        background: var(--surface-2);
+      /* ---- Coverage ---- */
+      .coverage-wrap { padding-top: 56px; padding-bottom: 64px; }
+
+      .cov-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      @media (max-width: 900px) { .cov-grid { grid-template-columns: 1fr; } }
+
+      .cov-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 26px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 30px;
-        flex-wrap: wrap;
+        border-radius: 14px;
+        padding: 20px;
+        transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
       }
-      .tb-left { display: flex; align-items: center; gap: 16px; max-width: 420px; }
-      .tb-left .tb-shield {
-        width: 44px; height: 44px; border-radius: 11px;
-        background: var(--green-tint); color: var(--green);
-        display: grid; place-items: center; flex: none;
+      .cov-card:hover {
+        border-color: var(--green);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(26, 157, 84, 0.1);
       }
-      .tb-left .tb-shield svg { width: 22px; height: 22px; }
-      .tb-left h3 { margin: 0 0 4px; font-size: 16px; font-family: var(--serif); }
-      .tb-left p { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
-      .tb-badges { display: flex; gap: 28px; flex-wrap: wrap; }
-      .tb-badge { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-soft); max-width: 120px; }
-      .tb-badge .b-ic { color: var(--green); flex: none; }
-      .tb-badge .b-ic svg { width: 18px; height: 18px; }
-      .tb-badge b { color: var(--ink); font-weight: 600; display: block; }
+      .cov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+      .cov-act { font-weight: 680; font-size: 16px; color: var(--ink); }
+      .cov-celex {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11.5px; color: var(--ink-soft);
+        background: var(--surface-2); border-radius: 5px; padding: 2px 6px;
+      }
+      .cov-name {
+        margin: 10px 0 14px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft);
+      }
+      .cov-stats { font-size: 13px; color: var(--ink-soft); }
+      .cov-stats b { color: var(--green-strong); font-weight: 680; }
+      .cov-stats span { opacity: 0.5; margin: 0 2px; }
 
+      .cov-note {
+        display: flex; gap: 12px; align-items: flex-start;
+        margin-top: 20px; padding: 16px 18px;
+        background: var(--surface-2); border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .cov-note p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+      .cov-note p b { color: var(--ink); }
+      .cov-note-ic { color: var(--green); flex: none; }
+      .cov-note-ic svg { width: 20px; height: 20px; display: block; }
       /* ============================================================
          FOOTER
          ============================================================ */
@@ -704,7 +722,6 @@
         .chat-main { order: 1; padding: 20px 18px; }
 
         .footer-grid { grid-template-columns: 1fr 1fr; }
-        .trust-band { padding: 22px; }
       }
     </style>
     <!-- ===================== AUTH UI ===================== -->
@@ -770,6 +787,17 @@
       .auth-msg.ok  { color: var(--green-strong); }
       .auth-msg.err { color: #b4232a; }
       .auth-fine { margin-top: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+      .auth-fine a { color: var(--green-strong); }
+
+      .auth-check {
+        display: flex; gap: 10px; align-items: flex-start;
+        margin-top: 4px; cursor: pointer;
+        font-size: 13px; line-height: 1.5; color: var(--ink-soft);
+      }
+      .auth-check input {
+        margin: 2px 0 0; flex: none; width: 16px; height: 16px;
+        accent-color: var(--green); cursor: pointer;
+      }
 
       /* The signed-in chip that replaces "Log in" in the nav. */
       .acct { display: flex; align-items: center; gap: 8px; }
@@ -1038,7 +1066,7 @@
         <div class="pad">
         <div class="section-head">
           <h2>Ask DlíFios</h2>
-          <p>Your legal research copilot.</p>
+          <p>Ask in plain English. Every answer cites the article it came from.</p>
         </div>
 
         <div class="ask-bar">
@@ -1090,22 +1118,62 @@
       </section>
 
       <!-- ===================== TRUST BAND ===================== -->
-      <section class="trust-band-wrap pad" id="trust">
-        <div class="trust-band">
-          <div class="tb-left">
-            <span class="tb-shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-            <div>
-              <h3>Built on trust. Backed by law.</h3>
-              <p>DlíFios uses official EU sources and advanced AI to deliver accurate, reliable, and citable answers.</p>
+      <!-- The Coverage link used to land on a badge band reading "Secure &
+           Reliable", which told a visitor nothing about what is actually in the
+           corpus. This says exactly what is indexed and, just as importantly,
+           what is not. -->
+      <section class="section coverage-wrap pad" id="trust">
+        <div class="section-head">
+          <h2>What DlíFios covers</h2>
+          <p>The whole corpus, in the open. Answers can only ever come from these texts.</p>
+        </div>
+
+        <div class="cov-grid">
+          <a class="cov-card" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679"
+            target="_blank" rel="noopener noreferrer">
+            <div class="cov-head">
+              <span class="cov-act">GDPR</span>
+              <span class="cov-celex">32016R0679</span>
             </div>
-          </div>
-          <div class="tb-badges">
-            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span><b>Official Sources</b>Only</span></div>
-            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg></span><span><b>Cited &amp;</b>Verifiable</span></div>
-            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><span><b>Privacy</b>Focused</span></div>
-            <div class="tb-badge"><span class="b-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span><span><b>Secure &amp;</b>Reliable</span></div>
-          </div>
+            <p class="cov-name">Regulation (EU) 2016/679 on the protection of natural persons with
+              regard to the processing of personal data</p>
+            <div class="cov-stats"><b>99</b> articles indexed <span>·</span> <b>205</b> passages</div>
+          </a>
+
+          <a class="cov-card" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689"
+            target="_blank" rel="noopener noreferrer">
+            <div class="cov-head">
+              <span class="cov-act">EU AI Act</span>
+              <span class="cov-celex">32024R1689</span>
+            </div>
+            <p class="cov-name">Regulation (EU) 2024/1689 laying down harmonised rules on artificial
+              intelligence</p>
+            <div class="cov-stats"><b>113</b> articles indexed <span>·</span> <b>324</b> passages</div>
+          </a>
+
+          <a class="cov-card" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32026D0713"
+            target="_blank" rel="noopener noreferrer">
+            <div class="cov-head">
+              <span class="cov-act">Commission Decision</span>
+              <span class="cov-celex">32026D0713</span>
+            </div>
+            <p class="cov-name">Decision (EU) 2026/713, added automatically by the daily monitor when
+              it was published</p>
+            <div class="cov-stats"><b>2</b> articles indexed <span>·</span> <b>2</b> passages</div>
+          </a>
+        </div>
+
+        <!-- Stating the gap is the point. A tool that hides its limits is the
+             thing this product is a reaction to. -->
+        <div class="cov-note">
+          <span class="cov-note-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          </span>
+          <p><b>Not covered yet.</b> There is no case law in the corpus, so DlíFios cannot
+            answer questions about CJEU judgments and will tell you so rather than guess.
+            National implementing laws and EDPB guidance are not indexed either, though
+            new guidance does feed the weekly digest.</p>
         </div>
       </section>
 
@@ -1556,15 +1624,29 @@
             </div>
           </div>
 
+          <!-- Unticked by default. GDPR Art. 4(11) requires a clear affirmative
+               action, so a pre-ticked box would not be valid consent, and the
+               privacy policy names consent as the basis for this email. -->
+          <label class="auth-check">
+            <input id="af-digest" name="digest_opt_in" type="checkbox" />
+            <span>Email me the weekly digest of new EU data-protection law.
+              You can unsubscribe at any time.</span>
+          </label>
+
           <button class="auth-submit" id="authSubmit" type="submit">
             Email me a sign-in link
           </button>
         </form>
 
         <p class="auth-msg" id="authMsg"></p>
+        <!-- Art. 13 requires telling people what happens to their data at the
+             point it is collected, not only on a page they might find later. -->
         <p class="auth-fine">
           Signing in gives you <b id="fineLimit">20</b> questions a day. We store your
-          details to personalise your weekly EU-law digest - nothing else.
+          name and the optional fields to tailor that digest, and your questions to
+          count usage. Your question text is sent to Google to generate answers.
+          Full detail in the <a href="/privacy" target="_blank" rel="noopener">privacy
+          policy</a>; you can delete your account and everything in it at any time.
         </p>
       </div>
     </div>
@@ -1720,6 +1802,9 @@
               employee_count: String(f.get("employee_count") || "") || null,
               sector:         String(f.get("sector") || "") || null,
               phone:          String(f.get("phone") || "").trim() || null,
+              // An unchecked box is absent from FormData, so this is false
+              // unless the user actually ticked it.
+              digest_opt_in:  f.get("digest_opt_in") === "on",
             },
           },
         });
