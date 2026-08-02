@@ -114,6 +114,13 @@ Audited against a 5-part checklist (Gitleaks / Bearer / ECC production audit) be
 - Server never trusts a client-supplied user id - tokens are verified with `supabaseAdmin.auth.getUser()`.
 - Questions are logged *before* the paid model call, so a failure mid-request can't be used to get free queries.
 - No PII in request-path logs.
+- `/ask` validates server-side: question trimmed, non-empty, capped at 1000
+  characters, and `k` constrained to 1-20. Unbounded, either field is a billing
+  vector rather than a crash.
+- `npm audit` clean apart from `sharp`/libvips CVEs reached through
+  `@huggingface/transformers`. No upstream fix exists; they are image-decoding
+  bugs and this project only runs text embeddings, so the path is unreachable.
+- `strict` TypeScript, zero errors.
 - **Right to erasure** (Art. 17) is self-serve: `DELETE /account` removes the profile, every logged question and the auth user in one step. Scoped to the token holder - it takes no user id, so it cannot be aimed at another account. Deletion order is chosen so no orphan rows survive.
 - A **privacy policy** at `/privacy`, written from the code rather than a template, disclosing that question text is sent to Google.
 
@@ -154,7 +161,9 @@ npm run serve     # http://localhost:3000
 
 | Command | What it does |
 |---|---|
-| `npm run serve` | Start the API + UI |
+| `npm start` | Start the API + UI |
+| `npm run typecheck` | `tsc` under `strict` |
+| `npm run serve` | Same as start |
 | `npm run ask` | Answer one question from the CLI |
 | `npm run store` | Rebuild the corpus |
 | `npm run monitor` | Find and ingest newly published acts |
@@ -204,6 +213,28 @@ curl -X POST localhost:3000/ask \
 ```
 
 ---
+
+## Deployment
+
+Containerised, and deployed on [Coolify](https://coolify.io). Point Coolify at
+the repo, set the environment variables from `.env.example`, expose port 3000.
+The healthcheck at `/health` gates traffic to a new container.
+
+Add the live domain to Supabase under **Authentication -> URL Configuration**,
+both as Site URL and in Redirect URLs, or the magic link will bounce.
+
+**Why not serverless.** This does not fit Vercel or Lambda, for three reasons
+worth stating because they are properties of the app rather than preferences:
+
+1. The anonymous rate limiter holds counters in process memory. Serverless gives
+   each invocation a fresh instance, so every caller would look new and the cap
+   would silently stop working.
+2. The embedding model is a large download held in memory. Cold starts would
+   either re-download it or time out.
+3. Ingestion runs for minutes, past a typical function timeout.
+
+A persistent container solves all three. Points 1 and 2 are also the argument
+for a single instance: scaling out needs Redis-backed limiting first.
 
 ## Stack
 
