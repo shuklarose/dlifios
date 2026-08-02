@@ -50,7 +50,7 @@ That second case matters more than the first. It's the difference between a demo
                   citations   └───────────────────┘
 
   ┌────────────┐              ┌───────────────────┐
-  │  Supabase  │              │  n8n (scheduled)  │
+  │  Supabase  │              │  n8n workflows    │
   │  auth      │              │  monitor: daily   │
   │  profiles  │              │  digest:  weekly  │
   │  quotas    │              └───────────────────┘
@@ -214,6 +214,23 @@ curl -X POST localhost:3000/ask \
 ```
 
 ---
+
+## Scheduled jobs
+
+Two n8n workflows in [`n8n/`](n8n/) keep the corpus current and send the weekly
+digest. Both call the `ADMIN_TOKEN`-gated machine routes.
+
+| Workflow | Schedule | Endpoint |
+|---|---|---|
+| Corpus monitor | Daily 06:00 | `POST /monitor` |
+| Weekly digest | Monday 08:00 | `POST /digest` |
+
+They are exported without credentials and ship inactive, so importing them is a
+deliberate step rather than something that starts firing on clone. Setup is in
+[`n8n/README.md`](n8n/README.md).
+
+`/ask` is not a workflow. A user is waiting on that response, so it belongs in
+the request path.
 
 ## Deployment
 

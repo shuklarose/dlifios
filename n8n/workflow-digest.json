@@ -1,0 +1,128 @@
+{
+  "name": "Dlifios weekly digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-660, -120],
+      "id": "b2000000-0000-4000-8000-000000000001",
+      "name": "Every Monday 08:00"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://REPLACE-WITH-YOUR-API-HOST/digest",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-440, -120],
+      "id": "b2000000-0000-4000-8000-000000000002",
+      "name": "POST /digest",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Dlifios admin token"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Returns { subject, body, recipients }. Recipients are read fresh each run, so an unsubscribe applies to the next send."
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "recipients",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [-220, -120],
+      "id": "b2000000-0000-4000-8000-000000000003",
+      "name": "One item per recipient",
+      "notesInFlow": true,
+      "notes": "No opted-in users means zero items, and the send below simply does not run."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $('POST /digest').first().json.subject }}",
+        "emailType": "text",
+        "message": "=Hello {{ $json.full_name }},\n\n{{ $('POST /digest').first().json.body }}\n\n---\nYou are receiving this because you opted in when you signed up for Dlifios.\nTo stop, reply to this email or delete your account in the app.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [0, -120],
+      "id": "b2000000-0000-4000-8000-000000000004",
+      "name": "Send digest",
+      "webhookId": "",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "One email per recipient. Subject and body come from the digest node, not from the split item."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 08:00": {
+      "main": [
+        [
+          {
+            "node": "POST /digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /digest": {
+      "main": [
+        [
+          {
+            "node": "One item per recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per recipient": {
+      "main": [
+        [
+          {
+            "node": "Send digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

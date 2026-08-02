@@ -1,52 +1,59 @@
 {
-  "name": "Cron",
+  "name": "Dlifios daily corpus monitor",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        -608,
-        -128
-      ],
-      "id": "b013e6df-ff79-46bf-b761-5ef05a1ee3f4",
-      "name": "When clicking ‘Execute workflow’"
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-460, -120],
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Every day at 06:00"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://dlifios-eu-law.loca.lt/monitor",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "bypass-tunnel-reminder",
-              "value": "1"
-            }
-          ]
-        },
+        "url": "https://REPLACE-WITH-YOUR-API-HOST/monitor",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{ \"question\": \"What does the law say about data protection\" }",
-        "options": {}
+        "jsonBody": "={}",
+        "options": {
+          "timeout": 600000
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [
-        -448,
-        -112
-      ],
-      "id": "402ee59b-7b64-48be-95a3-ac4e8f3209a9",
-      "name": "HTTP Request"
+      "position": [-240, -120],
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "POST /monitor",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Dlifios admin token"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Empty body: the endpoint defaults to a 7 day window. Ingestion is idempotent, so the overlap is deliberate and re-runs are safe."
     }
   ],
   "pinData": {},
   "connections": {
-    "When clicking ‘Execute workflow’": {
+    "Every day at 06:00": {
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "POST /monitor",
             "type": "main",
             "index": 0
           }
@@ -56,14 +63,7 @@
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
+    "executionOrder": "v1"
   },
-  "versionId": "cabc59ab-045a-4514-b282-5cf7834eaccd",
-  "meta": {
-    "instanceId": "7ddd9c15e82145b3041f7a1f607e747a7fb5c908a646705fff5b0d0dce2ab2af"
-  },
-  "id": "p1bI2zZIScnpa8xL",
   "tags": []
 }
