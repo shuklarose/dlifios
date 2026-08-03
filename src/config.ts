@@ -7,7 +7,6 @@ export const USER_AGENT = "DlifiosBot/1.0 (+https://github.com/roseshukla; roses
 // header, not the URL: http://publications.europa.eu/resource/celex/{CELEX}
 export const CELLAR_BASE = "http://publications.europa.eu/resource/celex/";
 export const ACCEPT_HTML = "application/xhtml+xml";
-export const ACCEPT_FORMEX = "application/xml;notice=branch";
 
 // SPARQL answers "what was published recently".
 export const SPARQL_ENDPOINT = "http://publications.europa.eu/webapi/rdf/sparql";
