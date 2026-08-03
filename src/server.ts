@@ -291,9 +291,33 @@ app.post("/ask", async (c) => {
     });
   } catch (err) {
     console.error("/ask failed:", err);
+
+    // The model provider's own rate limit, which is not the caller's fault and
+    // not a bug. Passing it through as a generic 500 sent people looking for a
+    // broken deployment when the real answer is "try again shortly".
+    if (isUpstreamRateLimit(err)) {
+      return c.json(
+        {
+          error:
+            "The language model is rate limited right now. This is an upstream " +
+            "limit, not a problem with your question. Please try again shortly.",
+          upstream: true,
+        },
+        503,
+      );
+    }
     return c.json({ error: "Failed to answer question" }, 500);
   }
 });
+
+// Provider errors arrive wrapped by the SDK, so check the status field the
+// LangChain wrapper preserves and fall back to matching the message.
+function isUpstreamRateLimit(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  if (status === 429) return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return /429|too many requests|quota|rate.?limit/i.test(message);
+}
 
 // Adds one act to the corpus. Called per act by the monitor. With no celex it
 // rebuilds the GDPR base corpus, which is the path used after a model swap.
