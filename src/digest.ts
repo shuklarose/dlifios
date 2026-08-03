@@ -7,14 +7,14 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 import { findNewActs } from "./sources/eurlex.ts";
 import { fetchEdpbItems } from "./sources/edpb.ts";
-import { GEMINI_MODEL } from "./config.ts";
+import { GEMINI_MODEL, GEMINI_TEMPERATURE } from "./config.ts";
 import "./env.ts";
 
-// Same Gemini config as answer.ts: temperature 0 so the digest reports only
-// what's in the lists, never inventing developments.
+// Same model config as the answer chain, for the same reason: the digest should
+// report what is in the lists rather than embellish it.
 const model = new ChatGoogleGenerativeAI({
   model: GEMINI_MODEL,
-  temperature: 0,
+  temperature: GEMINI_TEMPERATURE,
   apiKey: process.env.GEMINI_API_KEY,
 });
 

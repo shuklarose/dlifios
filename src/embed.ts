@@ -10,7 +10,7 @@ import { pipeline } from "@huggingface/transformers";
 import { Embeddings } from "@langchain/core/embeddings";
 import { fileURLToPath } from "node:url";
 
-const MODEL = "Xenova/all-mpnet-base-v2";
+import { EMBEDDING_MODEL } from "./config.ts";
 
 // Building the pipeline loads the model (~420 MB) - slow, and we only want it
 // ONCE no matter how many times embed() is called. This "lazy singleton" stores
@@ -19,7 +19,7 @@ let extractorPromise: Promise<any> | null = null;
 
 function getExtractor() {
   if (!extractorPromise) {
-    extractorPromise = pipeline("feature-extraction", MODEL, { dtype: "fp32" });
+    extractorPromise = pipeline("feature-extraction", EMBEDDING_MODEL, { dtype: "fp32" });
   }
   return extractorPromise;
 }

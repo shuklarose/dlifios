@@ -20,6 +20,8 @@ import {
   recordAnonHit,
   recentQuestions,
   digestRecipients,
+  getDigestOptIn,
+  setDigestOptIn,
   DAILY_LIMIT,
   ANON_LIMIT,
 } from "./quota.ts";
@@ -135,6 +137,45 @@ app.get("/history", async (c) => {
   } catch (err) {
     console.error("/history failed:", err);
     return c.json({ error: "Could not load history" }, 500);
+  }
+});
+
+// Read and change the caller's digest preference. Consent has to be as easy to
+// withdraw as it was to give (Art. 7(3)), and until this existed it could only
+// be given, at signup, and never taken back.
+app.get("/preferences", async (c) => {
+  const caller = await identifyCaller(c.req.header("Authorization"));
+  if (!caller.id) return c.json({ error: "Sign in first" }, 401);
+
+  try {
+    return c.json({ digestOptIn: await getDigestOptIn(caller.id) });
+  } catch (err) {
+    console.error("/preferences read failed:", err);
+    return c.json({ error: "Could not load preferences" }, 500);
+  }
+});
+
+app.post("/preferences", async (c) => {
+  const caller = await identifyCaller(c.req.header("Authorization"));
+  if (!caller.id) return c.json({ error: "Sign in first" }, 401);
+
+  let body: { digestOptIn?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body must be valid JSON" }, 400);
+  }
+  // Only a real boolean counts. A truthy string would let "false" opt someone in.
+  if (typeof body.digestOptIn !== "boolean") {
+    return c.json({ error: "Field 'digestOptIn' (boolean) is required" }, 400);
+  }
+
+  try {
+    await setDigestOptIn(caller.id, body.digestOptIn);
+    return c.json({ digestOptIn: body.digestOptIn });
+  } catch (err) {
+    console.error("/preferences write failed:", err);
+    return c.json({ error: "Could not save preferences" }, 500);
   }
 });
 

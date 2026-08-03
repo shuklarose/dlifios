@@ -840,6 +840,20 @@
          .acct{display:flex}, so without this the account box never hides and you
          see "Log in" and "Sign out" at the same time. Same for the nav buttons. */
       .acct[hidden], [data-auth-open][hidden] { display: none !important; }
+
+      .digest-toggle {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 13px; color: var(--hero-muted); cursor: pointer;
+        padding: 5px 9px; border-radius: 8px;
+        border: 1px solid var(--hero-line);
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .digest-toggle:hover { color: var(--hero-text); border-color: var(--hero-green); }
+      .digest-toggle input {
+        margin: 0; width: 14px; height: 14px;
+        accent-color: var(--hero-green); cursor: pointer;
+      }
+      .digest-toggle.saving { opacity: 0.5; pointer-events: none; }
       .acct-name {
         font-size: 13.5px; color: var(--hero-muted);
         max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -920,6 +934,12 @@
             <button class="btn btn-ghost" data-auth-open>Log in</button>
             <div class="acct" id="acctBox" hidden>
               <span class="acct-name" id="acctName"></span>
+              <!-- Consent must be as easy to withdraw as to give, so this sits
+                   next to the name rather than behind a settings page. -->
+              <label class="digest-toggle" id="digestToggle" title="Weekly digest email">
+                <input type="checkbox" id="digestCheck" />
+                <span>Digest</span>
+              </label>
               <button class="btn btn-ghost" id="signOut">Sign out</button>
               <button class="btn btn-ghost btn-danger" id="delAcct">Delete account</button>
             </div>
@@ -1819,8 +1839,53 @@
         if (signedIn) {
           const meta = session.user.user_metadata || {};
           acctName.textContent = meta.full_name || session.user.email;
+          loadDigestPreference();
         }
       }
+
+      // --- Digest preference ---------------------------------------------------
+      const digestToggle = document.getElementById("digestToggle");
+      const digestCheck = document.getElementById("digestCheck");
+
+      // Read the stored value rather than assuming, so the box reflects the
+      // database instead of whatever it happened to be left at.
+      async function loadDigestPreference() {
+        const token = await window.dlifios?.token();
+        if (!token) return;
+        try {
+          const res = await fetch(api("/preferences"), {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) return;
+          digestCheck.checked = (await res.json()).digestOptIn;
+        } catch {
+          // A failed read leaves the box as it was. Better than showing a
+          // default that misrepresents what we have recorded.
+        }
+      }
+
+      digestCheck.addEventListener("change", async () => {
+        const token = await window.dlifios?.token();
+        if (!token) return;
+
+        const wanted = digestCheck.checked;
+        digestToggle.classList.add("saving");
+        try {
+          const res = await fetch(api("/preferences"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ digestOptIn: wanted }),
+          });
+          if (!res.ok) throw new Error("save failed");
+          showToast(wanted ? "Subscribed to the weekly digest" : "Unsubscribed");
+        } catch {
+          // Put the box back, so it never shows a preference we failed to store.
+          digestCheck.checked = !wanted;
+          showToast("Could not save that. Try again.");
+        } finally {
+          digestToggle.classList.remove("saving");
+        }
+      });
 
       if (supabase) {
         supabase.auth.onAuthStateChange((_event, s) => {

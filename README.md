@@ -196,7 +196,7 @@ Audited against Gitleaks, Bearer and ECC production-audit checklists before depl
 - A user id supplied by the client is never trusted; tokens are verified with Supabase
 - Questions are counted *before* the model call, so a mid-request failure cannot be used for free queries
 - **Right to erasure** (GDPR Art. 17) is self-serve and immediate. Deletion order is chosen so no orphan rows survive
-- Digest consent defaults to off and records when it was given, because Art. 4(11) requires a clear affirmative action
+- Digest consent defaults to off and records when it was given, because Art. 4(11) requires a clear affirmative action, and is withdrawable from the account bar because Art. 7(3) requires that to be as easy as giving it
 - A privacy policy written from the code rather than a template, disclosing that question text reaches the model provider
 - `strict` TypeScript, zero errors
 
@@ -272,6 +272,8 @@ npm start         # http://localhost:3000
 | `GET /config` | none | Public browser config |
 | `POST /ask` | optional | Ask a question. Quota depends on the token |
 | `GET /history` | user | The caller's own past questions |
+| `GET /preferences` | user | Read the digest subscription |
+| `POST /preferences` | user | Subscribe or unsubscribe |
 | `DELETE /account` | user | Erase profile, questions and login |
 | `POST /ingest` | secret | Ingest an act by CELEX id |
 | `POST /monitor` | secret | Discover and ingest new acts |

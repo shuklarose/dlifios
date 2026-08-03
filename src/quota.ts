@@ -99,6 +99,33 @@ export async function recentQuestions(userId: string, limit = 20): Promise<
   return data ?? [];
 }
 
+// Whether this user currently wants the digest, for rendering the toggle.
+export async function getDigestOptIn(userId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("digest_opt_in")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data?.digest_opt_in);
+}
+
+// Record a change of mind either way.
+//
+// The timestamp is cleared on opt-out rather than left behind: Art. 7(1) asks us
+// to demonstrate consent where we rely on it, and a date sitting next to
+// digest_opt_in = false would document consent we are no longer acting on.
+export async function setDigestOptIn(userId: string, optIn: boolean): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("profiles")
+    .update({
+      digest_opt_in: optIn,
+      digest_opt_in_at: optIn ? new Date().toISOString() : null,
+    })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
 // Everyone who opted in to the weekly digest. The n8n schedule reads this to
 // address the send, so an unsubscribe takes effect on the next run with no
 // separate list to keep in sync.

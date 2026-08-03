@@ -6,13 +6,12 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { fileURLToPath } from "node:url";
 
 import { search } from "./retrieve.ts";
-import { GEMINI_MODEL } from "./config.ts";
+import { GEMINI_MODEL, GEMINI_TEMPERATURE } from "./config.ts";
 import "./env.ts";
 
-// temperature 0: faithfulness to the passages matters more than fluency here.
 const model = new ChatGoogleGenerativeAI({
   model: GEMINI_MODEL,
-  temperature: 0,
+  temperature: GEMINI_TEMPERATURE,
   apiKey: process.env.GEMINI_API_KEY,
 });
 

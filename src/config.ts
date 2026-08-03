@@ -21,10 +21,37 @@ export const CELEX = {
   AI_ACT: "32024R1689",
 };
 
-// 2.5-flash rather than 3.5-flash: on the free tier 3.5-flash returns 503 "high
-// demand" for most calls, and LangChain's exponential backoff turns those into
-// multi-minute hangs instead of clean failures.
-export const GEMINI_MODEL = "gemini-2.5-flash";
+// Generation model, swappable from the environment so trying a different one is
+// a config change and a restart rather than a code change and a deploy.
+//
+// The default is 2.5-flash rather than 3.5-flash because on the free tier
+// 3.5-flash returns 503 "high demand" for most calls, and LangChain's
+// exponential backoff turns those into multi-minute hangs instead of clean
+// failures.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+
+// Defaults to 0. Faithfulness to the retrieved passages matters more than
+// fluency here, and a legal citation is not improved by variation. Raise it
+// only to see how much the wording drifts, and check the citations still match
+// what was retrieved before leaving it raised.
+//
+// Number(undefined) is NaN rather than a default, so the guard matters: an
+// unset or malformed value falls back to 0 instead of reaching the API as NaN.
+const parsedTemperature = Number(process.env.GEMINI_TEMPERATURE);
+export const GEMINI_TEMPERATURE = Number.isFinite(parsedTemperature) ? parsedTemperature : 0;
+
+// Embedding model, deliberately NOT read from the environment.
+//
+// Changing it invalidates the whole index. Vectors from a different model live
+// in a different space, so old and new remain numerically comparable while
+// being semantically unrelated, and retrieval starts returning confident
+// nonsense rather than failing. A different output dimension is the lucky case:
+// Qdrant rejects the write outright.
+//
+// Swapping it means editing this line and rebuilding: `npm run store`, which
+// drops the collection and re-embeds every passage. Keeping it out of the
+// environment keeps that from looking like a restart-safe toggle.
+export const EMBEDDING_MODEL = "Xenova/all-mpnet-base-v2";
 
 // One collection holds every act. Chunks carry source/celex/article in metadata,
 // so a single query searches the whole corpus.
