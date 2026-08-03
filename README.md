@@ -9,11 +9,13 @@
 Every claim is traced to an article of the actual legislation and linked to the official text.
 When the law does not cover your question, it says so instead of guessing.
 
-[**Live app**](https://dlifios.vercel.app) &nbsp;·&nbsp; [Architecture](#architecture) &nbsp;·&nbsp; [How grounding is enforced](#how-grounding-is-enforced) &nbsp;·&nbsp; [Run it yourself](#run-it-yourself)
+**[Open the live app](https://dlifios.vercel.app)**
 
-`TypeScript` `Hono` `Qdrant` `Gemini` `Supabase` `Docker` `n8n`
+`TypeScript` &nbsp;`Hono` &nbsp;`Qdrant` &nbsp;`Gemini` &nbsp;`Supabase` &nbsp;`Docker` &nbsp;`n8n`
 
 </div>
+
+![DlíFios landing page](docs/screenshots/landing.png)
 
 ---
 
@@ -23,21 +25,20 @@ General-purpose chatbots answer legal questions confidently, and sometimes inven
 
 DlíFios is built so that cannot happen. Answers are assembled only from passages retrieved out of the primary legal text, and the model is instructed to refuse when those passages do not contain the answer.
 
+![A cited answer](docs/screenshots/cited-answer.png)
+
+Every claim carries the act and article it came from, down to the sub-paragraph. `GDPR Article 35(3)(b)` is a specific provision a reader can open and check, not a gesture at a document.
+
+### The harder half
+
 ```
-"What are the lawful bases for processing personal data?"
-
-  -> All six bases, each cited to (GDPR Article 6)
-  -> Every citation links to the official EUR-Lex text
-  -> Expandable: read the exact passage the answer came from
-
-
 "hi"
 
   -> "That is outside what I cover."
   -> No answer, and no citations either
 ```
 
-**The second case is the harder one to get right.** Retrieval returns passages for any input, so the naive implementation decorates a non-answer with three authoritative-looking references. Suppressing that is a deliberate mechanism, described below.
+Retrieval returns passages for *any* input, so the naive implementation decorates a non-answer with three authoritative-looking references. Suppressing that took a deliberate mechanism, described below.
 
 ---
 
@@ -73,8 +74,6 @@ DlíFios is built so that cannot happen. Answers are assembled only from passage
    └────────────┘
 ```
 
-### The pipeline
-
 | Stage | File | What it does |
 |---|---|---|
 | Fetch | `src/sources/eurlex.ts` | Pulls act HTML from the EU's Cellar service by CELEX id |
@@ -87,17 +86,23 @@ DlíFios is built so that cannot happen. Answers are assembled only from passage
 <details>
 <summary><b>Why chunk on article boundaries?</b></summary>
 
+<br>
+
 Fixed-size chunking splits mid-sentence and severs a provision from its own heading. Article boundaries are the natural semantic unit of legislation, and they are also what a lawyer cites.
 
 Chunking on them makes the citation a property of the chunk rather than something the model has to reconstruct, which is what allows a claim to be traced back to an exact article.
 
 Definitions articles get a second level of splitting, one chunk per definition. Measured on GDPR Article 4, the size-based splitter put `pseudonymisation`, `filing system`, `controller` and `processor` in one chunk, so its embedding landed at the centroid of four unrelated concepts and matched none of them. "What is a data controller?" could not retrieve the chunk defining a controller.
+
 </details>
 
 <details>
 <summary><b>Why embed locally instead of using an API?</b></summary>
 
+<br>
+
 The corpus is embedded once, but every question is embedded at query time. Running the model in-process removes a per-query cost and a network dependency from the hot path. The model is baked into the Docker image, so a cold start does not wait on a download.
+
 </details>
 
 ---
@@ -124,7 +129,7 @@ Each source carries a EUR-Lex permalink built from its CELEX number, plus the re
 
 ---
 
-## Access control
+## Accounts and limits
 
 | Caller | Limit | Enforced by |
 |---|---|---|
@@ -137,6 +142,42 @@ Each source carries a EUR-Lex permalink built from its CELEX number, plus the re
 Row Level Security is on for every table. `profiles` is scoped to `auth.uid() = id`. The usage log has RLS enabled with **no policies at all**, so no browser can read it and only the server can write. That is deliberate: it is a billing ledger, not user data.
 
 > The Supabase anon key is public by design. It is safe only *because* RLS is enforced on every table. The service-role key, which bypasses RLS, never leaves the server.
+
+<details>
+<summary><b>Question history</b></summary>
+
+<br>
+
+Every question is already written to the usage log for quota accounting, so history is a read of data the system was keeping anyway rather than a separate feature.
+
+![Question history](docs/screenshots/history.png)
+
+</details>
+
+---
+
+## Scheduled jobs
+
+Two n8n workflows drive the parts of the system nobody is waiting on.
+
+| Workflow | Schedule | Calls | Purpose |
+|---|---|---|---|
+| **Corpus monitor** | Daily 06:00 | `POST /monitor` | Queries the EU's SPARQL endpoint for newly published data-protection acts and ingests them |
+| **Weekly digest** | Monday 08:00 | `POST /digest` | Summarises the week's changes and emails everyone who opted in |
+
+![Weekly digest workflow](docs/screenshots/n8n-digest.png)
+
+The digest endpoint returns `{subject, body, recipients}` in one call. Split Out turns the recipient array into one item each, so the mail node runs once per subscriber. Recipients are read fresh on every run, so an unsubscribe or a deleted account applies to the next send with no list to keep in sync.
+
+![The digest email](docs/screenshots/digest-email.png)
+
+**That screenshot is a quiet week, and it is the more useful one.** Zero new acts is the normal case, because the EU does not publish data-protection legislation most weeks. A digest that reports nothing when nothing happened is the system working; one that always finds something to say would be the warning sign.
+
+The monitor follows the same two-node shape without the mail step. Ingestion is idempotent, so its seven-day window overlaps deliberately: an act already held is skipped rather than duplicated, and a missed run costs nothing.
+
+`/ask` is deliberately not a workflow. A user is waiting on that response, so it belongs in the request path.
+
+> The workflow definitions are not committed. They hold the API secret in plain text, and a public repo should not carry a credential in any form.
 
 ---
 
@@ -155,6 +196,7 @@ Audited against Gitleaks, Bearer and ECC production-audit checklists before depl
 - A user id supplied by the client is never trusted; tokens are verified with Supabase
 - Questions are counted *before* the model call, so a mid-request failure cannot be used for free queries
 - **Right to erasure** (GDPR Art. 17) is self-serve and immediate. Deletion order is chosen so no orphan rows survive
+- Digest consent defaults to off and records when it was given, because Art. 4(11) requires a clear affirmative action
 - A privacy policy written from the code rather than a template, disclosing that question text reaches the model provider
 - `strict` TypeScript, zero errors
 
@@ -206,8 +248,6 @@ npm run store     # fetch, chunk, embed, upsert  (~2 min)
 npm start         # http://localhost:3000
 ```
 
-### Commands
-
 | Command | Does |
 |---|---|
 | `npm start` | Run the API and UI |
@@ -237,6 +277,8 @@ npm start         # http://localhost:3000
 <details>
 <summary><b>Example response</b></summary>
 
+<br>
+
 ```bash
 curl -X POST localhost:3000/ask \
   -H "Content-Type: application/json" \
@@ -261,13 +303,12 @@ curl -X POST localhost:3000/ask \
   "limit": 20
 }
 ```
+
 </details>
 
 ---
 
 ## Deployment
-
-The API runs as a container; the UI is a single self-contained HTML file that can be hosted anywhere static.
 
 | Piece | Runs on |
 |---|---|
@@ -277,7 +318,7 @@ The API runs as a container; the UI is a single self-contained HTML file that ca
 | Auth and data | Supabase |
 | Schedules | n8n |
 
-Two settings connect the halves when they are hosted separately:
+The UI is a single self-contained HTML file, so it can be hosted anywhere static. Two settings connect the halves:
 
 | Where | Setting |
 |---|---|
@@ -287,6 +328,8 @@ Two settings connect the halves when they are hosted separately:
 <details>
 <summary><b>Why the API needs a persistent container</b></summary>
 
+<br>
+
 Three properties of the app, not preferences:
 
 1. The anonymous rate limiter holds counters in process memory. A serverless runtime gives each invocation a fresh instance, so every caller looks new and the cap silently stops working
@@ -294,51 +337,8 @@ Three properties of the app, not preferences:
 3. Ingestion runs for minutes, past a typical function timeout
 
 Points 1 and 2 are also the argument for a single instance. Scaling out needs Redis-backed limiting first.
+
 </details>
-
----
-
-## Scheduled jobs
-
-Two n8n workflows drive the parts of the system nobody is waiting on.
-
-| Workflow | Schedule | Calls | Purpose |
-|---|---|---|---|
-| **Corpus monitor** | Daily 06:00 | `POST /monitor` | Queries the EU's SPARQL endpoint for newly published data-protection acts and ingests them |
-| **Weekly digest** | Monday 08:00 | `POST /digest` | Summarises the week's changes and emails everyone who opted in |
-
-**Corpus monitor**
-
-```
-Schedule Trigger  ──▶  POST /monitor
-   daily 06:00            Authorization: Bearer <secret>
-```
-
-Ingestion is idempotent, so the seven-day default window overlaps deliberately: an act already held is skipped rather than duplicated, and a missed run costs nothing.
-
-**Weekly digest**
-
-```
-Schedule Trigger  ──▶  POST /digest  ──▶  Split Out  ──▶  Gmail
-   Monday 08:00          returns             one item        one email
-                    {subject, body,          per             per
-                     recipients}             recipient       recipient
-```
-
-Recipients are read fresh on every run, so an unsubscribe or a deleted account applies to the next send with no list to keep in sync.
-
-Two results look like failures and are not: the monitor finding zero acts, because the EU does not publish data-protection law most weeks, and the digest returning an empty recipient list before anyone opts in.
-
-`/ask` is deliberately not a workflow. A user is waiting on that response, so it belongs in the request path.
-
-<!-- SCREENSHOTS
-     Drop the exported images into docs/screenshots/ and uncomment:
-
-![Corpus monitor](docs/screenshots/n8n-monitor.png)
-![Weekly digest](docs/screenshots/n8n-digest.png)
--->
-
-> The workflow definitions are not committed. They hold the API secret in plain text, and a repo that is public should not carry a credential in any form.
 
 ---
 
@@ -347,7 +347,7 @@ Two results look like failures and are not: the monitor finding zero acts, becau
 - [ ] Retrieval evaluation set with an accuracy score
 - [ ] Date-aware retrieval, so "the most recent act" is answerable
 - [ ] CJEU case law, once ingested rather than claimed
-- [ ] Answer feedback capture
+- [ ] Deduplicate near-identical items in the digest
 - [ ] Redis-backed rate limiting for multi-instance deployment
 
 ---
