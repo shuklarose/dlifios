@@ -1513,6 +1513,15 @@
           });
           const data = await res.json();
 
+          // 503 with upstream:true is the model provider rate limiting us, which
+          // is a different cause from the user reaching their own cap.
+          if (res.status === 503 && data.upstream) {
+            chatMain.innerHTML =
+              '<p class="ans-q">' + render(question) + "</p>" +
+              '<div class="status">' + render(data.error) + "</div>";
+            return;
+          }
+
           // 429 = over the daily cap. Say so plainly instead of a generic error.
           if (res.status === 429) {
             chatMain.innerHTML =
