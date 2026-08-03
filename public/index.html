@@ -737,9 +737,29 @@
       }
       .auth-wrap.open { opacity: 1; pointer-events: auto; }
 
+      /* Locks the page behind an open dialog, so the two scrollbars can never
+         appear at once and the wheel does not scroll the page under the form. */
+      body.modal-open { overflow: hidden; }
+
+      /* Slim, muted scrollbars on WebKit, which otherwise draws the wide
+         default. scrollbar-width covers Firefox. */
+      .auth-card::-webkit-scrollbar { width: 8px; }
+      .auth-card::-webkit-scrollbar-track { background: transparent; }
+      .auth-card::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.18); border-radius: 4px;
+      }
+      .auth-card::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+
       .auth-card {
         width: min(460px, calc(100vw - 32px));
-        max-height: calc(100vh - 48px); overflow-y: auto;
+        /* Scrolls only when the form genuinely exceeds the viewport. Overlay
+           scrollbars keep the gutter from appearing over the content, and the
+           page behind is locked while the dialog is open so only one scrollbar
+           can ever be active. */
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        overscroll-behavior: contain;
         background: var(--surface); color: var(--ink);
         border-radius: 18px; padding: 26px;
         box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
@@ -1702,8 +1722,15 @@
         msgEl.textContent = text;
         msgEl.className = "auth-msg show " + (kind || "");
       }
-      const openModal  = () => { wrap.classList.add("open"); document.getElementById("af-email").focus(); };
-      const closeModal = () => wrap.classList.remove("open");
+      const openModal = () => {
+        wrap.classList.add("open");
+        document.body.classList.add("modal-open");
+        document.getElementById("af-email").focus();
+      };
+      const closeModal = () => {
+        wrap.classList.remove("open");
+        document.body.classList.remove("modal-open");
+      };
 
       // Event DELEGATION: one listener on the document instead of one per button.
       // This matters because the quota pill injects a "sign up free" link AFTER
@@ -1829,10 +1856,16 @@
       const delGo      = document.getElementById("delGo");
       const delMsg     = document.getElementById("delMsg");
 
-      const closeDel = () => { delWrap.classList.remove("open"); delConfirm.value = ""; delGo.disabled = true; };
+      const closeDel = () => {
+        delWrap.classList.remove("open");
+        document.body.classList.remove("modal-open");
+        delConfirm.value = "";
+        delGo.disabled = true;
+      };
       document.getElementById("delAcct").addEventListener("click", () => {
         delMsg.className = "auth-msg";
         delWrap.classList.add("open");
+        document.body.classList.add("modal-open");
         delConfirm.focus();
       });
       document.getElementById("delClose").addEventListener("click", closeDel);
