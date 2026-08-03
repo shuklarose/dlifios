@@ -7,8 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { search } from "./retrieve.ts";
 import { GEMINI_MODEL } from "./config.ts";
-
-process.loadEnvFile();
+import "./env.ts";
 
 // temperature 0: faithfulness to the passages matters more than fluency here.
 const model = new ChatGoogleGenerativeAI({

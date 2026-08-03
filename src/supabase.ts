@@ -7,8 +7,7 @@
 
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
-
-process.loadEnvFile();
+import "./env.ts";
 
 const url = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

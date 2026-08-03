@@ -8,8 +8,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { findNewActs } from "./sources/eurlex.ts";
 import { fetchEdpbItems } from "./sources/edpb.ts";
 import { GEMINI_MODEL } from "./config.ts";
-
-process.loadEnvFile();
+import "./env.ts";
 
 // Same Gemini config as answer.ts: temperature 0 so the digest reports only
 // what's in the lists, never inventing developments.

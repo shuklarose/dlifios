@@ -12,9 +12,7 @@ import { fileURLToPath } from "node:url";
 import { LocalEmbeddings } from "./embed.ts";
 import { chunkCelex } from "./chunk.ts";
 import { CELEX, COLLECTION } from "./config.ts";
-
-// Load QDRANT_URL / QDRANT_API_KEY from .env into process.env (Node built-in).
-process.loadEnvFile();
+import "./env.ts";
 
 // One place that builds the raw Qdrant client (for ops LangChain doesn't wrap:
 // delete collection, payload index, filtered scroll).
