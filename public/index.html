@@ -809,6 +809,16 @@
       .auth-fine { margin-top: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
       .auth-fine a { color: var(--green-strong); }
 
+      /* Wide tracking and a monospace face so a 6-digit code is easy to read
+         back from an email and easy to check for typos. */
+      .code-input {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+        font-size: 24px !important;
+        letter-spacing: 8px;
+        text-align: center;
+        padding: 12px !important;
+      }
+
       .auth-check {
         display: flex; gap: 10px; align-items: flex-start;
         margin-top: 4px; cursor: pointer;
@@ -1654,9 +1664,20 @@
           </label>
 
           <button class="auth-submit" id="authSubmit" type="submit">
-            Email me a sign-in link
+            Email me a sign-in code
           </button>
         </form>
+
+        <!-- Step two. Hidden until the email is sent. -->
+        <div id="codeBox" hidden>
+          <div class="fld">
+            <label for="codeInput">6-digit code from the email</label>
+            <input id="codeInput" type="text" inputmode="numeric" autocomplete="one-time-code"
+              maxlength="6" placeholder="123456" class="code-input" />
+          </div>
+          <button class="auth-submit" id="codeGo" type="button">Verify and sign in</button>
+          <button class="btn-cancel" id="codeBack" type="button">Use a different email</button>
+        </div>
 
         <p class="auth-msg" id="authMsg"></p>
         <!-- Art. 13 requires telling people what happens to their data at the
@@ -1718,11 +1739,25 @@
       const acctBox  = document.getElementById("acctBox");
       const acctName = document.getElementById("acctName");
 
+      const codeBox   = document.getElementById("codeBox");
+      const codeInput = document.getElementById("codeInput");
+      const codeGo    = document.getElementById("codeGo");
+      const codeBack  = document.getElementById("codeBack");
+      let pendingEmail = "";
+
+      // Back to the signup fields from the code step.
+      function resetAuthForm() {
+        codeBox.hidden = true;
+        form.hidden = false;
+        say("", "");
+      }
+
       function say(text, kind) {
         msgEl.textContent = text;
         msgEl.className = "auth-msg show " + (kind || "");
       }
       const openModal = () => {
+        if (typeof resetAuthForm === "function") resetAuthForm();
         wrap.classList.add("open");
         document.body.classList.add("modal-open");
         document.getElementById("af-email").focus();
@@ -1837,10 +1872,46 @@
         });
 
         submit.disabled = false;
-        submit.textContent = "Email me a sign-in link";
+        submit.textContent = "Email me a sign-in code";
         if (error) return say(error.message, "err");
-        say("Check " + email + " - we sent you a sign-in link. It expires in 1 hour.", "ok");
+
+        // Show the code entry. The email carries both a code and a link, and the
+        // code is the reliable path: mail providers prefetch links to scan them
+        // for phishing, and because the token is single use that consumes it
+        // before the recipient ever clicks. A typed code cannot be spent by a
+        // scanner.
+        pendingEmail = email;
+        form.hidden = true;
+        codeBox.hidden = false;
+        codeInput.value = "";
+        codeInput.focus();
+        say("Check " + email + " and enter the 6-digit code below. Expires in 1 hour.", "ok");
       });
+
+      // Verify the typed code. verifyOtp exchanges it for a session exactly as
+      // clicking the link would, so everything downstream is identical.
+      async function submitCode() {
+        const token = codeInput.value.replace(/\D/g, "");
+        if (token.length < 6) return say("Enter the 6-digit code from the email.", "err");
+
+        codeGo.disabled = true;
+        codeGo.textContent = "Verifying...";
+        const { error } = await supabase.auth.verifyOtp({
+          email: pendingEmail,
+          token,
+          type: "email",
+        });
+        codeGo.disabled = false;
+        codeGo.textContent = "Verify and sign in";
+
+        if (error) return say(error.message, "err");
+        // onAuthStateChange handles the rest: closes the dialog, repaints the nav.
+        resetAuthForm();
+      }
+
+      codeGo.addEventListener("click", submitCode);
+      codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitCode(); });
+      codeBack.addEventListener("click", resetAuthForm);
 
       document.getElementById("signOut").addEventListener("click", async () => {
         await supabase?.auth.signOut();
