@@ -210,14 +210,17 @@ Audited against Gitleaks, Bearer and ECC production-audit checklists before depl
 
 ## Corpus
 
-| Act | CELEX | Indexed |
-|---|---|---|
-| GDPR, Regulation (EU) 2016/679 | `32016R0679` | 99 articles |
-| EU AI Act, Regulation (EU) 2024/1689 | `32024R1689` | 113 articles |
-| Council Decision (EU) 2026/713 | `32026D0713` | added by the monitor |
-| Council Decision (EU) 2026/728 | `32026D0728` | added by the monitor |
+| Act | CELEX | Indexed | How it arrived |
+|---|---|---|---|
+| GDPR, Regulation (EU) 2016/679 | `32016R0679` | 99 articles | seeded |
+| EU AI Act, Regulation (EU) 2024/1689 | `32024R1689` | 113 articles | seeded |
+| Council Decision (EU) 2025/2441 | `32025D02441` | 2 articles | **monitor** |
+| Council Decision (EU) 2026/713 | `32026D0713` | 2 articles | **monitor** |
+| Council Decision (EU) 2026/728 | `32026D0728` | 2 articles | **monitor** |
 
-The last two arrived without anyone touching the system. That is the point of the daily job.
+535 passages in total. The last three arrived without anyone touching the system, which is the point of the daily job.
+
+Decisions index to few articles because most of their substance sits in annexes rather than numbered articles. The chunker takes what has article structure and skips the rest rather than inventing boundaries.
 
 **Not covered:** no case law, so questions about CJEU judgments get a refusal rather than a guess.
 
