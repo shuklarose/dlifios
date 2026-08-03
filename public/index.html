@@ -21,10 +21,10 @@
       content="Grounded answers on EU data-protection law. Every claim cited to an article of the GDPR or the AI Act and linked to the official text on EUR-Lex."
     />
 
-    <!-- Open Graph and Twitter cards, so a shared link renders as a preview card
-         rather than a bare URL. og:image needs an absolute URL, which a relative
-         path cannot provide, so it is filled in at deploy time with the real
-         domain. Left empty it is simply ignored. -->
+    <!-- Open Graph and Twitter cards, so a shared link renders as a preview
+         card rather than a bare URL. og:image must be an absolute URL: the
+         crawler fetches it from its own servers, where a relative path resolves
+         to nothing. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DlíFios" />
     <meta property="og:title" content="DlíFios - Know the Law. Cite the Source." />
@@ -32,8 +32,13 @@
       property="og:description"
       content="Grounded answers on EU data-protection law. Every claim cited to an article and linked to the official text. When the law does not cover it, it says so."
     />
-    <meta property="og:image" content="" />
+    <meta property="og:image" content="https://dlifios.vercel.app/assets/og-image.png" />
+    <meta property="og:image:width" content="1896" />
+    <meta property="og:image:height" content="870" />
+    <meta property="og:image:alt" content="DlíFios answering a question about EU data-protection law with article citations" />
+    <meta property="og:url" content="https://dlifios.vercel.app" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://dlifios.vercel.app/assets/og-image.png" />
     <meta name="twitter:title" content="DlíFios - Know the Law. Cite the Source." />
     <meta
       name="twitter:description"
