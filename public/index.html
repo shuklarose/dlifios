@@ -1393,7 +1393,7 @@
       function loadingCard(question) {
         chatMain.innerHTML =
           '<p class="ans-q">' + render(question) + "</p>" +
-          '<div class="status">Searching the law and composing a cited answer…</div>';
+          '<div class="status">Searching the law and composing a cited answer...</div>';
       }
 
       function answerCard(question, answer, sources) {
@@ -1506,7 +1506,7 @@
             '<a href="#" data-auth-open>Sign up free</a>.</div>';
           return;
         }
-        chatMain.innerHTML = '<p class="ans-q">History</p><div class="status">Loading…</div>';
+        chatMain.innerHTML = '<p class="ans-q">History</p><div class="status">Loading...</div>';
         try {
           const res = await fetch(api("/history"), { headers: { Authorization: "Bearer " + token } });
           const data = await res.json();
@@ -1593,7 +1593,7 @@
             <div class="fld">
               <label for="af-size">Company size</label>
               <select id="af-size" name="employee_count">
-                <option value="">Select…</option>
+                <option value="">Select...</option>
                 <option>1-10</option>
                 <option>11-50</option>
                 <option>51-200</option>
@@ -1607,7 +1607,7 @@
             <div class="fld">
               <label for="af-sector">Sector</label>
               <select id="af-sector" name="sector">
-                <option value="">Select…</option>
+                <option value="">Select...</option>
                 <option>Email marketing / Martech</option>
                 <option>Legal &amp; compliance</option>
                 <option>SaaS / Technology</option>
@@ -1620,7 +1620,7 @@
             <div class="fld">
               <label for="af-phone">Phone</label>
               <input id="af-phone" name="phone" type="tel"
-                autocomplete="tel" placeholder="+353 …" />
+                autocomplete="tel" placeholder="+353 ..." />
             </div>
           </div>
 
@@ -1789,7 +1789,7 @@
         if (!email) return say("Please enter your email.", "err");
 
         submit.disabled = true;
-        submit.textContent = "Sending…";
+        submit.textContent = "Sending...";
         say("", "");
 
         const { error } = await supabase.auth.signInWithOtp({
@@ -1849,7 +1849,7 @@
         const token = await window.dlifios.token();
         if (!token) return;
         delGo.disabled = true;
-        delGo.textContent = "Deleting…";
+        delGo.textContent = "Deleting...";
         try {
           const res = await fetch(api("/account"), {
             method: "DELETE",

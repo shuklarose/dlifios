@@ -222,15 +222,32 @@ digest. Both call the `ADMIN_TOKEN`-gated machine routes.
 
 | Workflow | Schedule | Endpoint |
 |---|---|---|
-| Corpus monitor | Daily 06:00 | `POST /monitor` |
-| Weekly digest | Monday 08:00 | `POST /digest` |
+| `workflow-monitor.json` | Daily 06:00 | `POST /monitor` |
+| `workflow-digest.json` | Monday 08:00 | `POST /digest` |
 
-They are exported without credentials and ship inactive, so importing them is a
-deliberate step rather than something that starts firing on clone. Setup is in
-[`n8n/README.md`](n8n/README.md).
+Exported without credentials and inactive, so importing them is deliberate
+rather than something that starts firing on clone.
 
-`/ask` is not a workflow. A user is waiting on that response, so it belongs in
-the request path.
+To set them up: create a Header Auth credential in n8n named `Dlifios admin
+token`, with name `Authorization` and value `Bearer <your ADMIN_TOKEN>`, then
+import both files and replace `REPLACE-WITH-YOUR-API-HOST` with the deployment
+URL. n8n cannot reach `localhost`, so it has to be a reachable host. The digest
+workflow also needs a Gmail OAuth2 credential on its send node. Run each once
+with Execute Workflow before enabling the schedule.
+
+Two results look like failures and are not: `/monitor` reporting zero acts found
+(the EU does not publish data-protection acts most weeks), and `/digest`
+returning an empty recipient list (nobody has opted in yet, so the send node
+runs zero times).
+
+Both post an empty body, so each endpoint applies its own seven-day default
+window. The monitor's overlap is deliberate: ingestion is idempotent, so an act
+already held is skipped rather than duplicated, and a missed run costs nothing.
+The digest reads its recipients fresh each run, so an unsubscribe takes effect
+on the next send.
+
+`/ask` is deliberately not a workflow. A user is waiting on that response, so it
+belongs in the request path.
 
 ## Deployment
 

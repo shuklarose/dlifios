@@ -2,7 +2,7 @@
 -- Run this AFTER schema.sql, in the Supabase SQL Editor.
 --
 -- The problem it solves: Supabase Auth writes to its own private auth.users table
--- when someone signs up (magic link). Our signup FORM fields (name, org, sector…)
+-- when someone signs up (magic link). Our signup FORM fields (name, org, sector...)
 -- ride along in that row's raw_user_meta_data. We want them copied into our own
 -- public.profiles table automatically, the instant the auth user is created -
 -- so the app (and the welcome-email webhook) always has a profile to read.
