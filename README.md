@@ -300,18 +300,45 @@ Points 1 and 2 are also the argument for a single instance. Scaling out needs Re
 
 ## Scheduled jobs
 
-Two n8n workflows in [`n8n/`](n8n/) keep the corpus current and send the digest.
+Two n8n workflows drive the parts of the system nobody is waiting on.
 
-| Workflow | Schedule | Calls |
-|---|---|---|
-| `workflow-monitor.json` | Daily 06:00 | `POST /monitor` |
-| `workflow-digest.json` | Monday 08:00 | `POST /digest` |
+| Workflow | Schedule | Calls | Purpose |
+|---|---|---|---|
+| **Corpus monitor** | Daily 06:00 | `POST /monitor` | Queries the EU's SPARQL endpoint for newly published data-protection acts and ingests them |
+| **Weekly digest** | Monday 08:00 | `POST /digest` | Summarises the week's changes and emails everyone who opted in |
 
-Exported without credentials and inactive, so importing them is deliberate rather than something that starts firing on clone. Create a Header Auth credential named `Dlifios admin token` holding `Bearer <secret>`, import both, and replace the placeholder host.
+**Corpus monitor**
 
-Two results look like failures and are not: the monitor finding zero acts (the EU does not publish data-protection law most weeks), and the digest returning an empty recipient list before anyone opts in.
+```
+Schedule Trigger  ──▶  POST /monitor
+   daily 06:00            Authorization: Bearer <secret>
+```
+
+Ingestion is idempotent, so the seven-day default window overlaps deliberately: an act already held is skipped rather than duplicated, and a missed run costs nothing.
+
+**Weekly digest**
+
+```
+Schedule Trigger  ──▶  POST /digest  ──▶  Split Out  ──▶  Gmail
+   Monday 08:00          returns             one item        one email
+                    {subject, body,          per             per
+                     recipients}             recipient       recipient
+```
+
+Recipients are read fresh on every run, so an unsubscribe or a deleted account applies to the next send with no list to keep in sync.
+
+Two results look like failures and are not: the monitor finding zero acts, because the EU does not publish data-protection law most weeks, and the digest returning an empty recipient list before anyone opts in.
 
 `/ask` is deliberately not a workflow. A user is waiting on that response, so it belongs in the request path.
+
+<!-- SCREENSHOTS
+     Drop the exported images into docs/screenshots/ and uncomment:
+
+![Corpus monitor](docs/screenshots/n8n-monitor.png)
+![Weekly digest](docs/screenshots/n8n-digest.png)
+-->
+
+> The workflow definitions are not committed. They hold the API secret in plain text, and a repo that is public should not carry a credential in any form.
 
 ---
 
