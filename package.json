@@ -10,6 +10,7 @@
   "scripts": {
     "start": "tsx src/server.ts",
     "typecheck": "tsc",
+    "eval": "tsx src/eval.ts",
     "probe": "tsx src/probe.ts",
     "chunk": "tsx src/chunk.ts",
     "embed": "tsx src/embed.ts",
