@@ -129,6 +129,35 @@ Each source carries a EUR-Lex permalink built from its CELEX number, plus the re
 
 ---
 
+## Measuring retrieval
+
+Grounding is only as good as what retrieval finds, so it is measured rather than assumed. `npm run eval` runs 30 questions paired with the article that should answer them, and scores whether it came back.
+
+| Metric | Score |
+|---|---|
+| Hit rate @5 | **77%** (23/30) |
+| Top-1 accuracy | **50%** (15/30) |
+| MRR | **0.594** |
+
+No model calls, so it costs nothing to run and isolates retrieval from generation. MRR sits next to hit rate because the model reads passages in order and weights the first most: an article found at rank 5 is not as useful as the same article at rank 1.
+
+The questions deliberately avoid the article's own heading. *"When do I need to carry out a data protection impact assessment"* rather than *"data protection impact assessment"*, because the second measures string overlap rather than retrieval.
+
+<details>
+<summary><b>What the failures show</b></summary>
+
+<br>
+
+All seven misses are real. Records of processing, processor contract terms, portability, automated decisions, transfer safeguards and AI Act penalties are correct answers the embedder does not surface.
+
+The most instructive is transfers. Asking what safeguards apply *"without an adequacy decision"* returns five chunks of the adequacy article, because the phrase dominates the vector and the negation carries almost no weight. Dense embeddings match topics, not logic.
+
+That points at the fix. The gap is not the language model, which never sees these articles at all; it is retrieval. Hybrid search would catch the keyword-ish cases, and a cross-encoder reranker over the top 20 would fix the ordering that MRR is penalising. Both are on the roadmap, and this score is the baseline they will be judged against.
+
+</details>
+
+---
+
 ## Accounts and limits
 
 | Caller | Limit | Enforced by |
@@ -255,6 +284,7 @@ npm start         # http://localhost:3000
 |---|---|
 | `npm start` | Run the API and UI |
 | `npm run typecheck` | `tsc` under `strict` |
+| `npm run eval` | Score retrieval against the evaluation set |
 | `npm run ask` | Answer one question from the CLI |
 | `npm run store` | Rebuild the corpus |
 | `npm run monitor` | Find and ingest newly published acts |
@@ -349,7 +379,9 @@ Points 1 and 2 are also the argument for a single instance. Scaling out needs Re
 
 ## Roadmap
 
-- [ ] Retrieval evaluation set with an accuracy score
+- [x] Retrieval evaluation set with an accuracy score
+- [ ] Hybrid search, to catch the keyword-shaped questions dense embeddings miss
+- [ ] Cross-encoder reranker over the top 20, to lift top-1 accuracy
 - [ ] Date-aware retrieval, so "the most recent act" is answerable
 - [ ] CJEU case law, once ingested rather than claimed
 - [ ] Deduplicate near-identical items in the digest
