@@ -367,6 +367,8 @@ The UI is a React single-page app in [`web/`](web/), built with Vite to static f
 | Frontend build | `VITE_API_BASE=https://api.example.com` |
 | API environment | `ALLOWED_ORIGINS=https://your-frontend.example.com` |
 
+For this deployment both live in the repo: `VITE_API_BASE` in [`vercel.json`](vercel.json), which builds `web/` and serves `web/dist`, and `ALLOWED_ORIGINS` in the API's environment. The API origin is public either way, and the API decides what it will answer regardless of who asks.
+
 Leave `VITE_API_BASE` unset when both halves share an origin. In development, Vite proxies the API routes instead, so local work needs no entry in `ALLOWED_ORIGINS`:
 
 ```bash
