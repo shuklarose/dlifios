@@ -1,9 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
-  "outputDirectory": "public",
+  "framework": "vite",
+  "installCommand": "npm install --prefix web",
+  "buildCommand": "npm run build --prefix web",
+  "outputDirectory": "web/dist",
+  "build": {
+    "env": {
+      "VITE_API_BASE": "https://e12gsb70dq1h63e0hp178smz.157.173.120.29.sslip.io"
+    }
+  },
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" }
   ],
