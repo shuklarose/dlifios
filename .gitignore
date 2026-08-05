@@ -22,3 +22,8 @@ Thumbs.db
 
 # Reference material, not part of the application
 *.pdf
+
+# Globe reference material, not wired into the app yet
+EuRegulatoryGlobe.jsx
+eu-regulatory-globe.html
+hiii.md

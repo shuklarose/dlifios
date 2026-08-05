@@ -1,0 +1,852 @@
+/* ============================================================
+         DESIGN TOKENS
+         One source of truth for colour and type. Changing a brand
+         colour means editing it here once, not in 40 rules.
+         ============================================================ */
+      :root {
+        /* Surfaces */
+        --page-bg: #14171b;     /* dark gutter the framed page floats on */
+        --surface: #ffffff;     /* cards + main page background */
+        --surface-2: #f6f8f6;   /* alternating light section */
+        --line: #e7eae6;        /* hairline borders on light */
+
+        /* Ink (text on light) */
+        --ink: #1b211d;
+        --ink-soft: #5d675f;
+
+        /* Brand greens */
+        --green: #1a9d54;       /* primary buttons / accents */
+        --green-strong: #15833f;/* hover */
+        --green-tint: #eaf6ef;  /* soft green fill behind icons */
+
+        /* Hero (dark) palette */
+        --hero-text: #f1f5f1;
+        --hero-muted: #a9b4ac;
+        --hero-green: #46c178;  /* "Stay Ahead." + accents on dark */
+        --hero-line: rgba(255, 255, 255, 0.1);
+
+        /* Deep teal-green hero palette (provided) */
+        --dark-bg: #021115;
+        --deep-green: #0c3b2e;
+        --almost-black-green: #001117;
+        --accent-green: #8fbf8a;
+        --gold-glow: #d8c56a;
+
+        --radius: 14px;
+        --shadow-sm: 0 1px 2px rgba(16, 24, 20, 0.06), 0 1px 3px rgba(16, 24, 20, 0.05);
+        --shadow-md: 0 10px 30px rgba(16, 24, 20, 0.08);
+
+        --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --serif: "Lora", Georgia, "Times New Roman", serif;
+      }
+
+      /* ============================================================
+         RESET / BASE
+         ============================================================ */
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; text-decoration: none; }
+      img, svg { display: block; }
+      button { font-family: inherit; cursor: pointer; }
+
+      /* The whole site is framed as a rounded card on a dark backdrop,
+         exactly like the mockup. On phones we drop the frame to full-bleed. */
+      /* Full-bleed: each section's background spans the whole viewport width. */
+      .page {
+        width: 100%;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      /* The centered content column. Section BACKGROUNDS go full width (on the
+         section element); the .pad wrapper INSIDE keeps text in a readable,
+         centered column so it doesn't stretch edge-to-edge on big monitors. */
+      .pad {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 40px;
+        padding-right: 40px;
+      }
+
+      /* ============================================================
+         NAVBAR  (lives inside the dark hero band)
+         ============================================================ */
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 22px;
+        padding-bottom: 22px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 22px;
+        color: var(--hero-text);
+      }
+      .brand .shield { color: var(--hero-green); width: 26px; height: 26px; }
+      .brand-mark { width: 42px; height: 42px; object-fit: contain; flex: none; }
+
+      /* The nav is `justify-content: space-between` with three children, which
+         spreads them brand | links | CTA - fine with five links, but with two
+         they float marooned in the middle of the bar.
+         `margin-right: auto` makes THIS element absorb all the leftover space,
+         so the links sit tight against the brand and the CTA is pushed right.
+         That's the conventional SaaS layout: identity + navigation on the left,
+         action on the right. */
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        margin-left: 38px;
+        margin-right: auto;
+      }
+      .nav-links a {
+        color: var(--hero-muted);
+        font-size: 14.5px;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover { color: var(--hero-text); }
+
+      .nav-cta { display: flex; align-items: center; gap: 12px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 14.5px;
+        font-weight: 600;
+        padding: 10px 18px;
+        transition: background 0.15s, border-color 0.15s, transform 0.05s;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-ghost {
+        background: transparent;
+        color: var(--hero-text);
+        border: 1px solid var(--hero-line);
+      }
+      .btn-ghost:hover { border-color: rgba(255, 255, 255, 0.32); }
+      .btn-primary { background: var(--green); color: #fff; }
+      .btn-primary:hover { background: var(--green-strong); }
+
+      /* Hamburger - hidden on desktop, shown on mobile. */
+      .hamburger {
+        display: none;
+        background: transparent;
+        border: 0;
+        color: var(--hero-text);
+        padding: 6px;
+      }
+
+      /* ============================================================
+         HERO
+         ============================================================ */
+      .hero {
+        position: relative;
+        background:
+          radial-gradient(circle at 70% 25%, var(--deep-green) 0%, var(--dark-bg) 45%, var(--almost-black-green) 100%);
+        color: var(--hero-text);
+        overflow: hidden;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 30px;
+        align-items: center;
+        padding-top: 26px;
+        padding-bottom: 70px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(70, 193, 120, 0.1);
+        border: 1px solid rgba(70, 193, 120, 0.25);
+        color: #cdeada;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 13px;
+        border-radius: 999px;
+        margin-bottom: 26px;
+      }
+      .pill .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--hero-green);
+        box-shadow: 0 0 0 3px rgba(70, 193, 120, 0.25);
+      }
+
+      .hero h1 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(38px, 5.2vw, 58px);
+        line-height: 1.05;
+        letter-spacing: -1px;
+        margin: 0 0 20px;
+      }
+      .hero h1 .ahead { color: var(--hero-green); display: block; }
+
+      .hero-sub {
+        color: var(--hero-muted);
+        font-size: 18px;
+        max-width: 30ch;
+        margin: 0 0 24px;
+      }
+
+      .checks { list-style: none; margin: 0 0 30px; padding: 0; display: grid; gap: 12px; }
+      .checks li { display: flex; align-items: center; gap: 11px; font-size: 15.5px; color: #dde6df; }
+      .checks .tick {
+        flex: none;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: rgba(70, 193, 120, 0.16);
+        color: var(--hero-green);
+        display: grid; place-items: center;
+      }
+      .checks .tick svg { width: 12px; height: 12px; }
+
+      .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+      .btn-lg { padding: 13px 22px; font-size: 15px; }
+
+      /* ---- The code-drawn globe + floating notification cards ---- */
+      .globe-wrap {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        max-width: 440px;
+        margin-left: auto;
+      }
+      #globe { width: 100%; height: 100%; }
+      .globe-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: none;          /* shown only once the file successfully loads */
+      }
+
+      .float-card {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(13, 24, 18, 0.72);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 10px 13px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        animation: bob 6s ease-in-out infinite;
+      }
+      .float-card .fc-icon {
+        width: 30px; height: 30px; border-radius: 8px;
+        display: grid; place-items: center; flex: none;
+      }
+      .float-card .fc-icon svg { width: 16px; height: 16px; }
+      .fc-title { font-size: 13px; font-weight: 600; color: var(--hero-text); line-height: 1.2; }
+      .fc-sub { font-size: 11.5px; color: var(--hero-muted); }
+
+      .fc-1 { top: 6%; left: 4%; animation-delay: 0s; }
+      .fc-1 .fc-icon { background: rgba(59, 130, 246, 0.18); color: #7eb0ff; }
+      .fc-2 { top: 40%; right: -6%; animation-delay: -2s; }
+      .fc-2 .fc-icon { background: rgba(70, 193, 120, 0.18); color: var(--hero-green); }
+      .fc-3 { bottom: 8%; left: -4%; animation-delay: -4s; }
+      .fc-3 .fc-icon { background: rgba(234, 179, 8, 0.18); color: #f4cd57; }
+
+      @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-9px); }
+      }
+
+      /* ============================================================
+         TRUST BAR (logos)
+         ============================================================ */
+      .trustbar {
+        border-bottom: 1px solid var(--line);
+        padding-top: 24px;
+        padding-bottom: 24px;
+        text-align: center;
+      }
+      .trustbar .label {
+        color: var(--ink-soft);
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      .logos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        flex-wrap: wrap;
+      }
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--ink);
+        font-weight: 600;
+        font-size: 15px;
+        opacity: 0.85;
+      }
+      .logo .lmark { width: 24px; height: 24px; flex: none; }
+      .oj-badge {
+        border: 1.5px solid #2f5fd0;
+        color: #2f5fd0;
+        font-weight: 700;
+        font-size: 11px;
+        border-radius: 5px;
+        padding: 1px 4px;
+        font-family: var(--serif);
+      }
+
+      /* ============================================================
+         "WHAT IS DLÍFIOS?" - feature grid
+         ============================================================ */
+      .section { padding-top: 64px; padding-bottom: 64px; }
+      .section-head { text-align: center; max-width: 620px; margin: 0 auto 44px; }
+      .section-head h2 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(26px, 3.4vw, 34px);
+        margin: 0 0 12px;
+        letter-spacing: -0.4px;
+      }
+      .section-head p { color: var(--ink-soft); margin: 0; font-size: 16px; }
+      .leaf { color: var(--green); width: 22px; height: 22px; margin: 0 auto 12px; }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+      .feature {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px 20px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .feature:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+      .feature .ficon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--green-tint);
+        color: var(--green);
+        display: grid; place-items: center;
+        margin-bottom: 16px;
+      }
+      .feature .ficon svg { width: 20px; height: 20px; }
+      .feature h3 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+      .feature p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+
+      /* ============================================================
+         ASK DLÍFIOS - the real, working tool
+         ============================================================ */
+      .ask-section { background: var(--surface-2); border-top: 1px solid var(--line); }
+
+      .ask-bar {
+        display: flex;
+        gap: 0;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 7px 7px 7px 18px;
+        max-width: 720px;
+        margin: 0 auto 16px;
+        box-shadow: var(--shadow-sm);
+      }
+      .ask-bar input {
+        flex: 1;
+        border: 0;
+        outline: none;
+        font-size: 15.5px;
+        color: var(--ink);
+        background: transparent;
+      }
+      .ask-bar input::placeholder { color: #9aa39c; }
+      .send-btn {
+        flex: none;
+        width: 40px; height: 40px;
+        border: 0; border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: grid; place-items: center;
+        transition: background 0.15s;
+      }
+      .send-btn:hover { background: var(--green-strong); }
+      .send-btn:disabled { opacity: 0.55; cursor: default; }
+      .send-btn svg { width: 18px; height: 18px; }
+
+      .chips {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        max-width: 720px;
+        margin: 0 auto 26px;
+      }
+      .chip-q {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .chip-q:hover { border-color: var(--green); color: var(--ink); }
+      .chip-q svg { width: 13px; height: 13px; opacity: 0.6; }
+
+      /* The chat panel: sidebar + answer area inside one bordered card. */
+      .chat-panel {
+        display: grid;
+        grid-template-columns: 168px 1fr;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        max-width: 920px;
+        margin: 0 auto;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+      }
+      .chat-side {
+        border-right: 1px solid var(--line);
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .side-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        text-align: left;
+        transition: background 0.12s, color 0.12s;
+      }
+      .side-item:hover { background: var(--surface-2); color: var(--ink); }
+      .side-item svg { width: 15px; height: 15px; flex: none; opacity: 0.75; }
+
+      .chat-main { padding: 24px 26px; min-height: 320px; }
+      .ans-q { font-size: 16px; font-weight: 600; margin: 0 0 14px; }
+      .ans-body { font-size: 14.5px; color: #2c352e; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }
+      .ans-body strong { color: var(--ink); font-weight: 600; }
+      .status { color: var(--ink-soft); font-size: 14px; }
+
+      .ans-sources { margin-top: 22px; }
+      .ans-sources h4 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--ink-soft); margin: 0 0 10px;
+      }
+      .src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: src; }
+      .src-list li {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13.5px; color: var(--ink);
+      }
+      .src-list li::before {
+        counter-increment: src;
+        content: counter(src) ".";
+        color: var(--ink-soft);
+        font-variant-numeric: tabular-nums;
+        flex: none;
+      }
+      .src-tag {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--green-strong);
+        background: var(--green-tint);
+        border-radius: 5px;
+        padding: 1px 7px;
+      }
+
+      .ans-foot {
+        margin-top: 22px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ans-foot .disclaimer { font-size: 12px; color: var(--ink-soft); }
+      .ans-tools { display: flex; gap: 6px; }
+      .icon-btn {
+        background: transparent; border: 0; color: #9aa39c;
+        width: 30px; height: 30px; border-radius: 7px;
+        display: grid; place-items: center;
+        transition: background 0.12s, color 0.12s;
+      }
+      .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+      .icon-btn svg { width: 15px; height: 15px; }
+
+      /* ============================================================
+         TRUST BAND ("Built on trust. Backed by law.")
+         ============================================================ */
+      /* ---- Coverage ---- */
+      .coverage-wrap { padding-top: 56px; padding-bottom: 64px; }
+
+      .cov-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      @media (max-width: 900px) { .cov-grid { grid-template-columns: 1fr; } }
+
+      .cov-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+        transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      }
+      .cov-card:hover {
+        border-color: var(--green);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(26, 157, 84, 0.1);
+      }
+
+      .cov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+      .cov-act { font-weight: 680; font-size: 16px; color: var(--ink); }
+      .cov-celex {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11.5px; color: var(--ink-soft);
+        background: var(--surface-2); border-radius: 5px; padding: 2px 6px;
+      }
+      .cov-name {
+        margin: 10px 0 14px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft);
+      }
+      .cov-stats { font-size: 13px; color: var(--ink-soft); }
+      .cov-stats b { color: var(--green-strong); font-weight: 680; }
+      .cov-stats span { opacity: 0.5; margin: 0 2px; }
+
+      .cov-note {
+        display: flex; gap: 12px; align-items: flex-start;
+        margin-top: 20px; padding: 16px 18px;
+        background: var(--surface-2); border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .cov-note p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+      .cov-note p b { color: var(--ink); }
+      .cov-note-ic { color: var(--green); flex: none; }
+      .cov-note-ic svg { width: 20px; height: 20px; display: block; }
+      /* ============================================================
+         FOOTER
+         ============================================================ */
+      .footer {
+        background: #0c130f;
+        color: #cdd6cf;
+      }
+      /* brand + Product + Sources + Legal. */
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1.8fr 1fr 1fr 1fr;
+        gap: 30px;
+        padding-top: 48px;
+        padding-bottom: 32px;
+      }
+      .footer .brand { color: #fff; margin-bottom: 12px; }
+      .footer-about { font-size: 13.5px; color: #8b968c; max-width: 26ch; }
+      .footer h4 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+        color: #7f8a80; margin: 0 0 14px; font-weight: 600;
+      }
+      .footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+      .footer ul a { font-size: 13.5px; color: #aeb8af; }
+      .footer ul a:hover { color: #fff; }
+
+      .footer-bottom {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 18px;
+        padding-bottom: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .footer-bottom .copy { font-size: 12.5px; color: #7f8a80; }
+      .socials { display: flex; gap: 14px; }
+      .socials a { color: #8b968c; }
+      .socials a:hover { color: #fff; }
+      .socials svg { width: 18px; height: 18px; }
+
+      /* ============================================================
+         MOBILE MENU (hidden until hamburger toggles it)
+         ============================================================ */
+      .mobile-menu {
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0 0 18px;
+      }
+      .mobile-menu.open { display: flex; }
+      .mobile-menu a {
+        color: var(--hero-muted);
+        padding: 10px 4px;
+        font-size: 15px;
+        border-bottom: 1px solid var(--hero-line);
+      }
+      .mobile-menu .mm-cta { display: flex; gap: 10px; margin-top: 14px; }
+      .mobile-menu .mm-cta .btn { flex: 1; justify-content: center; }
+
+      /* tiny toast for "coming soon" decorative actions */
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%) translateY(20px);
+        background: #1b211d;
+        color: #fff;
+        font-size: 13px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 50;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+      /* ============================================================
+         RESPONSIVE  - tablet then phone
+         ============================================================ */
+      @media (max-width: 880px) {
+        .pad { padding-left: 24px; padding-right: 24px; }
+        .features { grid-template-columns: repeat(2, 1fr); }
+        .hero-grid { grid-template-columns: 1fr; gap: 10px; padding-bottom: 48px; }
+        .globe-wrap { display: none; }           /* phone hides the globe (matches mockup) */
+        .nav-links, .nav-cta { display: none; }
+        .hamburger { display: block; }
+      }
+
+      @media (max-width: 560px) {
+        .page { margin: 0; border-radius: 0; }
+        .pad { padding-left: 18px; padding-right: 18px; }
+        .features { grid-template-columns: 1fr; }
+        .hero h1 { font-size: 40px; }
+        .hero-actions .btn-secondary { display: none; }  /* phone shows only the primary CTA */
+        .hero-actions .btn { width: 100%; justify-content: center; }
+
+        /* Chat panel: sidebar becomes a bottom tab strip, like the phone mockup. */
+        .chat-panel { grid-template-columns: 1fr; }
+        .chat-side {
+          order: 2;
+          flex-direction: row;
+          justify-content: space-around;
+          border-right: 0;
+          border-top: 1px solid var(--line);
+          padding: 8px 4px;
+        }
+        .side-item { flex-direction: column; gap: 4px; font-size: 10.5px; padding: 6px 4px; }
+        .chat-main { order: 1; padding: 20px 18px; }
+
+        .footer-grid { grid-template-columns: 1fr 1fr; }
+      }
+    
+
+
+      /* The modal backdrop. Fixed = pinned to the viewport, not the page flow.
+         We toggle .open rather than display:none so we can fade it. */
+      .auth-wrap {
+        position: fixed; inset: 0; z-index: 60;
+        display: grid; place-items: center;
+        background: rgba(2, 17, 21, 0.62);
+        backdrop-filter: blur(4px);
+        opacity: 0; pointer-events: none; transition: opacity 0.18s ease;
+      }
+      .auth-wrap.open { opacity: 1; pointer-events: auto; }
+
+      /* Locks the page behind an open dialog, so the two scrollbars can never
+         appear at once and the wheel does not scroll the page under the form. */
+      body.modal-open { overflow: hidden; }
+
+      /* Slim, muted scrollbars on WebKit, which otherwise draws the wide
+         default. scrollbar-width covers Firefox. */
+      .auth-card::-webkit-scrollbar { width: 8px; }
+      .auth-card::-webkit-scrollbar-track { background: transparent; }
+      .auth-card::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.18); border-radius: 4px;
+      }
+      .auth-card::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+
+      .auth-card {
+        width: min(460px, calc(100vw - 32px));
+        /* Scrolls only when the form genuinely exceeds the viewport. Overlay
+           scrollbars keep the gutter from appearing over the content, and the
+           page behind is locked while the dialog is open so only one scrollbar
+           can ever be active. */
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        overscroll-behavior: contain;
+        background: var(--surface); color: var(--ink);
+        border-radius: 18px; padding: 26px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+        transform: translateY(8px) scale(0.99);
+        transition: transform 0.18s ease;
+      }
+      .auth-wrap.open .auth-card { transform: none; }
+
+      .auth-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+      .auth-head h3 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 4px; }
+      .auth-head p { color: var(--ink-soft); font-size: 14px; margin: 0; }
+      .auth-x {
+        background: none; border: 0; cursor: pointer; color: var(--ink-soft);
+        font-size: 22px; line-height: 1; padding: 2px 6px; border-radius: 8px;
+      }
+      .auth-x:hover { background: var(--surface-2); color: var(--ink); }
+
+      .auth-form { margin-top: 18px; display: grid; gap: 12px; }
+      .auth-row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+      @media (max-width: 480px) { .auth-row { grid-template-columns: 1fr; } }
+
+      .fld { display: grid; gap: 5px; }
+      .fld label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+      .fld input, .fld select {
+        width: 100%; font: inherit; font-size: 14.5px; color: var(--ink);
+        padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+        background: #fff; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .fld input:focus, .fld select:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px var(--green-tint);
+      }
+
+      .auth-submit {
+        margin-top: 4px; width: 100%; font: inherit; font-weight: 650; font-size: 15px;
+        padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+        background: var(--green); color: #fff; transition: background 0.15s;
+      }
+      .auth-submit:hover:not(:disabled) { background: var(--green-strong); }
+      .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+      /* One status line does all the talking: errors, "check your email", etc. */
+      .auth-msg { font-size: 13.5px; line-height: 1.5; margin-top: 12px; display: none; }
+      .auth-msg.show { display: block; }
+      .auth-msg.ok  { color: var(--green-strong); }
+      .auth-msg.err { color: #b4232a; }
+      .auth-fine { margin-top: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+      .auth-fine a { color: var(--green-strong); }
+
+      /* Wide tracking and a monospace face so a 6-digit code is easy to read
+         back from an email and easy to check for typos. */
+      .code-input {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+        font-size: 24px !important;
+        letter-spacing: 8px;
+        text-align: center;
+        padding: 12px !important;
+      }
+
+      .auth-check {
+        display: flex; gap: 10px; align-items: flex-start;
+        margin-top: 4px; cursor: pointer;
+        font-size: 13px; line-height: 1.5; color: var(--ink-soft);
+      }
+      .auth-check input {
+        margin: 2px 0 0; flex: none; width: 16px; height: 16px;
+        accent-color: var(--green); cursor: pointer;
+      }
+
+      /* The signed-in chip that replaces "Log in" in the nav. */
+      .acct { display: flex; align-items: center; gap: 8px; }
+      /* The browser's default [hidden]{display:none} is a WEAKER rule than our
+         .acct{display:flex}, so without this the account box never hides and you
+         see "Log in" and "Sign out" at the same time. Same for the nav buttons. */
+      .acct[hidden], [data-auth-open][hidden] { display: none !important; }
+
+      .digest-toggle {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 13px; color: var(--hero-muted); cursor: pointer;
+        padding: 5px 9px; border-radius: 8px;
+        border: 1px solid var(--hero-line);
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .digest-toggle:hover { color: var(--hero-text); border-color: var(--hero-green); }
+      .digest-toggle input {
+        margin: 0; width: 14px; height: 14px;
+        accent-color: var(--hero-green); cursor: pointer;
+      }
+      .digest-toggle.saving { opacity: 0.5; pointer-events: none; }
+      .acct-name {
+        font-size: 13.5px; color: var(--hero-muted);
+        max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      /* The "17 of 20 left today" pill under the ask bar. */
+      .quota-pill {
+        display: none; margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft);
+      }
+      .quota-pill.show { display: block; }
+      .quota-pill b { color: var(--ink); font-weight: 650; }
+
+      /* Destructive action. Muted until hover so it never competes with the
+         primary CTA, then unmistakably red once you're reaching for it. */
+      .btn-danger { color: #ff9b9b !important; }
+      .btn-danger:hover { background: rgba(220, 38, 38, 0.16) !important; color: #ff6b6b !important; }
+
+      /* The type-to-confirm field inside the delete dialog. */
+      .danger-card { border-top: 3px solid #c62828; }
+      .danger-list { margin: 14px 0 0; padding-left: 20px; font-size: 14px; color: var(--ink-soft); }
+      .danger-list li { margin-bottom: 4px; }
+      .btn-destroy {
+        margin-top: 4px; width: 100%; font: inherit; font-weight: 650; font-size: 15px;
+        padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+        background: #c62828; color: #fff;
+      }
+      .btn-destroy:disabled { opacity: 0.45; cursor: not-allowed; }
+      .btn-cancel {
+        width: 100%; font: inherit; font-weight: 600; font-size: 14.5px; margin-top: 8px;
+        padding: 11px; border: 1px solid var(--line); border-radius: 10px;
+        background: #fff; color: var(--ink); cursor: pointer;
+      }
+
+      /* The retrieved passage, revealed under a citation. */
+      .src-excerpt { margin-top: 6px; }
+      .src-excerpt summary {
+        cursor: pointer; font-size: 12.5px; color: var(--green-strong);
+        list-style: none; display: inline-block; padding: 2px 0;
+      }
+      .src-excerpt summary::-webkit-details-marker { display: none; }
+      .src-excerpt summary::before { content: "+ "; font-weight: 700; }
+      .src-excerpt[open] summary::before { content: "- "; }
+      .src-excerpt summary:hover { text-decoration: underline; }
+      .src-excerpt blockquote {
+        margin: 8px 0 4px; padding: 10px 14px;
+        border-left: 3px solid var(--green);
+        background: var(--surface-2); border-radius: 0 8px 8px 0;
+        font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
+      }
+
+      /* Bibliography links - underlined on hover so they read as citations,
+         not as buttons. */
+      .src-list a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+      .src-list a:hover { color: var(--green-strong); border-bottom-color: var(--green); }

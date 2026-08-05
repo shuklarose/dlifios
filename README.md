@@ -11,7 +11,7 @@ When the law does not cover your question, it says so instead of guessing.
 
 **[Open the live app](https://dlifios.vercel.app)**
 
-`TypeScript` &nbsp;`Hono` &nbsp;`Qdrant` &nbsp;`Gemini` &nbsp;`Supabase` &nbsp;`Docker` &nbsp;`n8n`
+`TypeScript` &nbsp;`React` &nbsp;`Vite` &nbsp;`Hono` &nbsp;`Qdrant` &nbsp;`Gemini` &nbsp;`Supabase` &nbsp;`Docker` &nbsp;`n8n`
 
 </div>
 
@@ -82,6 +82,8 @@ Retrieval returns passages for *any* input, so the naive implementation decorate
 | Store | `src/store.ts` | Upserts to Qdrant with act, CELEX, article, title |
 | Retrieve | `src/retrieve.ts` | Cosine similarity, top-k |
 | Answer | `src/answer.ts` | System prompt plus retrieved context, then citation filtering |
+| Serve | `src/server.ts` | Hono routes, quotas, auth, security headers |
+| UI | `web/src/` | React and Vite, typed against the API's response shapes |
 
 <details>
 <summary><b>Why chunk on article boundaries?</b></summary>
@@ -276,13 +278,18 @@ supabase/03_digest_consent.sql      digest opt-in
 Then build the corpus and start:
 
 ```bash
-npm run store     # fetch, chunk, embed, upsert  (~2 min)
-npm start         # http://localhost:3000
+npm run store              # fetch, chunk, embed, upsert  (~2 min)
+npm start                  # API on http://localhost:3000
+
+npm install --prefix web   # once
+npm run dev --prefix web   # UI on http://localhost:5173
 ```
 
 | Command | Does |
 |---|---|
-| `npm start` | Run the API and UI |
+| `npm start` | Run the API |
+| `npm run dev --prefix web` | Run the UI with hot reload |
+| `npm run build --prefix web` | Build the UI to `web/dist` |
 | `npm run typecheck` | `tsc` under `strict` |
 | `npm run eval` | Score retrieval against the evaluation set |
 | `npm run ask` | Answer one question from the CLI |
@@ -353,12 +360,19 @@ curl -X POST localhost:3000/ask \
 | Auth and data | Supabase |
 | Schedules | n8n |
 
-The UI is a single self-contained HTML file, so it can be hosted anywhere static. Two settings connect the halves:
+The UI is a React single-page app in [`web/`](web/), built with Vite to static files, so it can be hosted anywhere static. Two settings connect the halves:
 
 | Where | Setting |
 |---|---|
-| `public/index.html` | `<meta name="dlifios-api-base" content="https://api.example.com">` |
+| Frontend build | `VITE_API_BASE=https://api.example.com` |
 | API environment | `ALLOWED_ORIGINS=https://your-frontend.example.com` |
+
+Leave `VITE_API_BASE` unset when both halves share an origin. In development, Vite proxies the API routes instead, so local work needs no entry in `ALLOWED_ORIGINS`:
+
+```bash
+npm run dev --prefix web                          # proxies to the deployed API
+API_TARGET=http://localhost:3000 npm run dev --prefix web   # or to a local one
+```
 
 <details>
 <summary><b>Why the API needs a persistent container</b></summary>
