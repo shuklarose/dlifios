@@ -222,56 +222,13 @@
       .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
       .btn-lg { padding: 13px 22px; font-size: 15px; }
 
-      /* ---- The code-drawn globe + floating notification cards ---- */
+      /* ---- Globe slot. The globe itself carries its own styles ---- */
       .globe-wrap {
         position: relative;
         aspect-ratio: 1 / 1;
         width: 100%;
         max-width: 440px;
         margin-left: auto;
-      }
-      #globe { width: 100%; height: 100%; }
-      .globe-img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: none;          /* shown only once the file successfully loads */
-      }
-
-      .float-card {
-        position: absolute;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(13, 24, 18, 0.72);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 10px 13px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-        animation: bob 6s ease-in-out infinite;
-      }
-      .float-card .fc-icon {
-        width: 30px; height: 30px; border-radius: 8px;
-        display: grid; place-items: center; flex: none;
-      }
-      .float-card .fc-icon svg { width: 16px; height: 16px; }
-      .fc-title { font-size: 13px; font-weight: 600; color: var(--hero-text); line-height: 1.2; }
-      .fc-sub { font-size: 11.5px; color: var(--hero-muted); }
-
-      .fc-1 { top: 6%; left: 4%; animation-delay: 0s; }
-      .fc-1 .fc-icon { background: rgba(59, 130, 246, 0.18); color: #7eb0ff; }
-      .fc-2 { top: 40%; right: -6%; animation-delay: -2s; }
-      .fc-2 .fc-icon { background: rgba(70, 193, 120, 0.18); color: var(--hero-green); }
-      .fc-3 { bottom: 8%; left: -4%; animation-delay: -4s; }
-      .fc-3 .fc-icon { background: rgba(234, 179, 8, 0.18); color: #f4cd57; }
-
-      @keyframes bob {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-9px); }
       }
 
       /* ============================================================

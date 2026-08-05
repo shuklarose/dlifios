@@ -1,4 +1,4 @@
-import Globe from "./Globe";
+import EuRegulatoryGlobe from "./EuRegulatoryGlobe";
 
 const CHECKS = [
   "Cited to the article, linked to the official text",
@@ -47,7 +47,9 @@ export default function Hero() {
         </div>
       </div>
 
-      <Globe />
+      <div className="globe-wrap">
+        <EuRegulatoryGlobe size="100%" />
+      </div>
     </div>
   );
 }
